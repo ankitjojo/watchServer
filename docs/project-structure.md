@@ -64,9 +64,10 @@ modules/webhookMonitors/
 ├── webhookMonitors.routes.ts       # Router: pages + /api/v1 endpoints, role guards
 ├── webhookMonitors.controller.ts   # HTTP in/out only
 ├── webhookMonitors.service.ts      # Business rules, audit, scheduler upsert
-├── webhookMonitors.repository.ts   # webhook_monitors collection access
+├── webhookMonitors.repository.ts   # webhook_monitors collection access; returns domain objects via the mapper
+├── webhookMonitors.mapper.ts       # Pure doc ↔ domain conversion (prefixed ↔ camelCase, TD-16)
 ├── webhookMonitors.schemas.ts      # Zod: create/update body, list query, params
-├── webhookMonitors.types.ts        # Document + domain types for this module
+├── webhookMonitors.types.ts        # WebhookMonitorDoc (prefixed) + WebhookMonitor (camelCase)
 ├── webhookMonitors.runner.ts       # Executes one check (called by scheduler)
 └── staleness.evaluator.ts          # Pure: evaluateStaleness()
 ```

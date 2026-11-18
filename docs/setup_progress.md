@@ -61,6 +61,7 @@
 - 2026-11-18 — Decisions answered:
   - `git init` done (no commit). `.gitignore` created (protects `.env`).
   - payMonitor's own DB uses **plain camelCase** fields. Source DB fields keep their own names.
+    (Superseded 2026-11-18 by TD-16: type-prefixed names like the subscription DB.)
   - **Single instance** in production; in-process scheduler + Mongo lease lock as safety net.
   - Libraries: Zod, Pino, **Jest** (not Vitest), ESLint + Prettier, helmet, express-session +
     connect-mongo, bcrypt, CSRF protection, express-rate-limit, tsx; ESM + `nodenext`.

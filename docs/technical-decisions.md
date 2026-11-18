@@ -19,9 +19,8 @@
 - **Decision**: `MONGO_URI` (Monitor DB, read/write) and `SOURCE_MONGO_URI` (Source DB, MongoDB user with `read` role only). Source access wrapped by `modules/sourceData` which exposes no write method.
 - **Why**: Requirement §5; defence in depth (DB role + code boundary).
 
-### TD-04 · Field naming in Monitor DB — Accepted
-- **Decision**: Plain camelCase (`name`, `isActive`, `createdAt`). Source DB fields are referenced exactly as they exist (`dCreatedAt` etc.) — they are an external contract.
-- **Trade-off**: Differs from the source backend's Hungarian prefixes; never "translate" source field names.
+### TD-04 · Field naming in Monitor DB — Superseded by TD-16
+- ~~Plain camelCase (`name`, `isActive`, `createdAt`).~~ Replaced on 2026-11-18 at the user's request, before any code or data existed.
 
 ### TD-05 · Single instance + in-process scheduler with lease lock — Accepted
 - **Decision**: Scheduler runs inside the web process using `setTimeout` chains per monitor. A `scheduler_locks` document (owner id + `expiresAt`, renewed every 15 s, TTL 45 s) must be held to run checks or dispatch email.
@@ -38,12 +37,12 @@
 - **Why**: Fast structured logs; requirements ask for structured logs per check/alert/email attempt.
 
 ### TD-08 · Durations stored as entered + normalized ms — Proposed
-- **Decision**: Store `{ value: number, unit: DurationUnit, ms: number }`. `ms` computed on save using `DAYS_PER_MONTH` at that time.
+- **Decision**: Store `{ nValue: number, eUnit: DurationUnit, nMs: number }`. `ms` computed on save using `DAYS_PER_MONTH` at that time.
 - **Why**: Show admins what they typed; logic uses `ms`. Changing `DAYS_PER_MONTH` affects only monitors saved afterwards — explicit and predictable.
 - **Trade-off**: Requires a recompute script if the team ever wants existing monitors re-normalized.
 
 ### TD-09 · Alert idempotency via dedupe keys (no transactions required) — Proposed
-- **Decision**: `alerts.dedupeKey` unique index. Keys:
+- **Decision**: `alerts.sDedupeKey` unique index. Keys:
   `incident:<incidentId>:open`, `incident:<incidentId>:reminder:<n>`, `incident:<incidentId>:recovered`, `check:<checkId>:every` (Every-check mode), `sourceError:<incidentId>:open|recovered`, `test:<uuid>`.
   Duplicate-key error on insert = already created → treat as success.
 - **Why**: Store-first + crash/restart must never produce duplicate emails; works without a replica set (open question A1).
@@ -67,4 +66,15 @@
 - **Decision**: `process.loadEnvFile()` (Node ≥ 20.12) in dev when `.env` exists; no `dotenv` dependency. Production supplies real env vars.
 
 ### TD-15 · Soft delete for monitors — Accepted (requirements FR-D2)
-- **Decision**: `deletedAt` timestamp; all list queries filter `deletedAt: null`; history remains linked.
+- **Decision**: `dDeletedAt` timestamp; all list queries filter `dDeletedAt: null`; history remains linked.
+
+### TD-16 · Type-prefixed field names in Monitor DB (same as subscription backend) — Accepted
+- **Context**: The user wants payMonitor's database to follow the same naming convention as the JOJO subscription DB so the team reads one style across both databases. Decided 2026-11-18, before any code or data existed, so there is no migration.
+- **Decision**: Every stored field (top level and nested) uses a one-letter type prefix + PascalCase: `s` string, `n` number, `b` boolean, `d` Date, `e` enum value, `o` object, `a` array, `i` ObjectId reference. `_id` unchanged; collection names stay snake_case. Full table and rules: `docs/database-design.md` §B.0.
+- **Scope (updated 2026-11-18)**: Prefixed names exist **only in the persistence layer**: document types (`<Entity>Doc` in `<module>.types.ts`), `<module>.mapper.ts`, `<module>.repository.ts`, and `src/database/indexes.ts`.
+- **Everything above the repository is camelCase**: domain types, services, controllers, EJS view-models, HTML form field names, JSON request **and** response bodies, URL query params, log fields. (User decision: forms and API bodies stay camelCase.)
+- **Mapping**: each module has a `<module>.mapper.ts` with pure functions `to<Entity>(doc)` (doc → domain) and `to<Entity>Doc(input, ctx)` / `to<Entity>Update(input)` (input → doc / `$set` object). Repositories call the mapper, so services never see a prefixed field. Mappers are unit-tested (a field missed in a mapper is a silent bug).
+- **Trade-off vs. the subscription backend**: it uses prefixed names end-to-end with no mapping. We add one mapper per module in exchange for a clean camelCase API/forms; the cost is keeping mapper + both types in sync when a field is added.
+- **Exception**: `sessions` (owned by `connect-mongo`) keeps the library's field names.
+- **Trade-off**: Prefixes are noisier in code and don't add compile-time safety beyond what TypeScript already gives; accepted for consistency with the existing team codebase.
+

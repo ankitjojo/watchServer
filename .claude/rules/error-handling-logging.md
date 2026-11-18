@@ -18,7 +18,7 @@ paths:
 - Levels: `fatal` startup failure/lease lost permanently · `error` unexpected exception, alert `FAILED` · `warn` check `STALE/NO_DATA/DOWN/ERROR`, email retry, skipped run · `info` startup/shutdown, monitor CRUD, alert `SENT` · `debug` per-check details (dev only).
 - Structured fields, stable event names: `logger.warn({ event: 'check.result', monitorId, monitorType, result, ageMs, durationMs }, 'Webhook monitor stale')`.
 - Context: `requestId` (from `x-request-id` or `randomUUID()`, echoed in response header) on request logs via `pino-http` child logger; `monitorId`/`checkId`/`alertId` on background logs.
-- Redaction config (in `src/logger`): `req.headers.cookie`, `req.headers.authorization`, `res.headers["set-cookie"]`, `*.password`, `*.passwordHash`, `*._csrf`, `*.smtpPass`, `*.uri`. Mask URL query values before logging endpoint URLs. Don't log email bodies or recipient lists at info.
+- Redaction config (in `src/logger`): `req.headers.cookie`, `req.headers.authorization`, `res.headers["set-cookie"]`, `*.password`, `*.sPassword`, `*.sPasswordHash`, `*._csrf`, `*.smtpPass`, `*.uri`. Mask URL query values before logging endpoint URLs. Don't log email bodies or recipient lists at info.
 
 ## Operations
 - Config validated at startup with Zod → on failure log variable NAMES and exit(1).

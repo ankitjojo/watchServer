@@ -16,5 +16,6 @@ Full rationale and examples: `docs/coding-standards.md` §1–3.
 - Derive types from Zod schemas (`z.infer`) — don't hand-write a parallel interface.
 - Domain values are `as const` objects + union types in `src/constants/` (no TS `enum`). Reuse existing ones before adding new ones.
 - Results/states are discriminated unions (`{ kind: 'STALE', ageMs } | { kind: 'NO_DATA', reason }`), handled with exhaustive `switch` + `never` check.
+- Two shapes per persisted entity: `<Entity>Doc` (stored, type-prefixed: `sName`, `bIsActive`) and `<Entity>` (domain, camelCase). Only repositories/mappers touch `<Entity>Doc` (TD-16).
 - Types belong to their module (`<module>.types.ts`); move to `src/types/` only when ≥ 2 modules need them. Never define the same shape twice.
 - Policies/evaluators take `now: Date` or a `Clock`; they don't call `new Date()`.

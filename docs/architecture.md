@@ -36,7 +36,7 @@ Legend used in this doc: **[Confirmed]** = stated in requirements or verified in
 | **Routes** (`*.routes.ts`) | URL → middleware chain → controller. Role guards declared here. | Contain logic, touch DB. |
 | **Controllers** (`*.controller.ts`) | Parse/validate input with the module's Zod schema, call one service method, choose view or JSON response. | Query DB, hold business rules, call SMTP/HTTP. |
 | **Services** (`*.service.ts`) | Business rules, orchestration, audit-log calls, transactions of intent. | Know about `req`/`res`, render views. |
-| **Repositories** (`*.repository.ts`) | All Monitor-DB queries for one collection; map documents ↔ domain types. | Contain business decisions. |
+| **Repositories** (`*.repository.ts`) | All Monitor-DB queries for one collection; convert prefixed documents ↔ camelCase domain types via `*.mapper.ts` (TD-16). | Contain business decisions. |
 | **Pure domain functions** (`*.policy.ts`, `*.evaluator.ts`) | Deterministic logic: staleness evaluation, alert decision, duration math. No I/O. | Import DB, logger, clock (time is passed in). |
 | **Source reader** (`modules/sourceData`) | The ONLY code that touches the Source DB. Exposes `listCollections`, `getLatestTimestamp`, `hasDescendingIndex`. | Expose the raw `Db`/`Collection` object or any write method. |
 | **Scheduler** (`src/scheduler`) | Timers, per-monitor in-flight guard, lease lock, (re)loading monitors. | Contain check logic — it calls module runners. |
@@ -93,16 +93,16 @@ Hard rules:
 5. `ERROR` → `alerts.service.handleSourceError(...)` (grouped, master only, FR-A4a). Monitor state unchanged.
    Otherwise → pure `decideAlert({ monitorState, result, alertMode, repeatIntervalMs, now })` returns actions:
    `openIncident | sendFailure | sendReminder | closeIncident+sendRecovered | none`.
-6. Apply actions: incidents update, alert docs inserted with status `PENDING` (**store first**), monitor `currentStatus/lastCheckAt/nextCheckAt` updated atomically.
+6. Apply actions: incidents update, alert docs inserted with status `PENDING` (**store first**), monitor `oState.eCurrentStatus / dLastCheckAt / dNextCheckAt` updated atomically.
 7. Dispatcher picks up PENDING alerts (immediately via in-process nudge, and by polling as a fallback).
 
 ### 5.2 Endpoint check (FR-E2)
 Same as 5.1 but step 2 is `httpProbe(url, { timeoutMs, retryCount, retryDelayMs, maxRedirects })` returning all attempts. `DOWN` only if every attempt fails. No `ERROR` grouping — an unreachable URL **is** the alert.
 
 ### 5.3 Alert dispatch (FR-A1, FR-A2)
-1. Atomically claim one due alert: `findOneAndUpdate({status ∈ {PENDING,RETRYING}, nextAttemptAt ≤ now, lockedUntil < now}, {$set:{lockedUntil}})`.
+1. Atomically claim one due alert: `findOneAndUpdate({eStatus ∈ {PENDING,RETRYING}, dNextAttemptAt ≤ now, dLockedUntil < now}, {$set:{dLockedUntil}})`.
 2. Resolve recipients at creation time (already stored on the alert) → send via email module.
-3. Success → `SENT` (+`sentAt`, `messageId`). Failure → `RETRYING` with next backoff from config; after last → `FAILED`.
+3. Success → `SENT` (+`dSentAt`, `sMessageId`). Failure → `RETRYING` with next backoff from config; after last → `FAILED`.
 4. On startup, the dispatcher resumes PENDING/RETRYING alerts (FR crash-safety, §5 of requirements).
 
 ### 5.4 Scheduler lifecycle (FR-S1..S4)
@@ -114,7 +114,7 @@ Same as 5.1 but step 2 is `httpProbe(url, { timeoutMs, retryCount, retryDelayMs,
 ## 6. Cross-cutting
 
 - **Time**: all logic in UTC; `Clock` (`now(): Date`) injected into runners/policies for testability. Display timezone from config (`TIMEZONE`, default `UTC`).
-- **Durations**: stored as `{ value, unit }` (what the admin typed) **and** `ms` (derived on save) so queries/logic never re-derive with a changed `DAYS_PER_MONTH`. [Recommendation — see technical-decisions TD-08]
+- **Durations**: stored as `{ nValue, eUnit }` (what the admin typed) **and** `nMs` (derived on save) so queries/logic never re-derive with a changed `DAYS_PER_MONTH`. [Recommendation — see technical-decisions TD-08]
 - **Errors**: `AppError` hierarchy → central handler; see [coding-standards.md](coding-standards.md#errors).
 - **Logging**: Pino with redaction; see [.claude/rules/error-handling-logging.md](../.claude/rules/error-handling-logging.md).
 - **Security**: see [security.md](security.md).

@@ -45,6 +45,7 @@ Permanent rules the user gives during development are appended here (newest last
 - All project Markdown docs (requirements, plans, guides, rules for humans) live in `docs/`; feature plans in `docs/implementation_plans/`.
 - Ask focused questions (multiple-choice where possible) when anything is unclear, instead of assuming.
 - For multi-step work, keep a progress checklist file in `docs/` so an interrupted session can be resumed.
+- payMonitor DB field names follow the **subscription DB convention**: type prefix + PascalCase (`sName`, `nRetryCount`, `bIsActive`, `dCreatedAt`, `eStatus`, `oThreshold`, `aRecipients`, `iMonitorId`). Prefixed names stay in the persistence layer only (Doc types, mappers, repositories). **Forms, API request/response bodies, services and views are camelCase**; `<module>.mapper.ts` converts. See TD-16 and `docs/database-design.md` §B.0.
 
 ## Report at the end of every task
 Files changed (created/modified/deleted) · commands run and their real results · tests/gates status (incl. those not run and why) · assumptions made · open risks/questions.

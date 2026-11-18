@@ -12,6 +12,7 @@ paths:
 Contracts, route map, status codes: `docs/api-standards.md`.
 
 - Every route declares: auth (`requireAuth`), role (`requireRole('ADMIN')` for any mutation or any action that hits Source DB/SMTP/endpoints), CSRF for non-GET, and a Zod `validate({ params, query, body })`.
+- Forms, JSON request/response bodies and query params are camelCase (`name`, `threshold.value`). Never send stored prefixed names or raw documents to clients/views; use the module mapper (TD-16). `_id` → `id`.
 - Validated input is read from `res.locals.input`, never from raw `req.body`/`req.query`.
 - Zod schemas: `.strict()` objects, bounded strings/numbers, `z.coerce` for form numbers, cross-field rules in `superRefine`, shared `objectIdSchema` for ids.
 - JSON API under `/api/v1` uses the envelope `{ success, data, meta? }` / `{ success:false, error:{ code, message, details?, requestId } }`. Error codes come from `src/errors`.

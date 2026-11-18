@@ -1,7 +1,7 @@
 # payMonitor — Database Design
 
 > Status: **Proposed**. Nothing below exists yet — no collection, index or migration has been created.
-> Requirements: [requirements.md §6](requirements.md). Rules: `.claude/rules/database.md`. Decisions: TD-03, TD-04, TD-08, TD-09.
+> Requirements: [requirements.md §6](requirements.md). Rules: `.claude/rules/database.md`. Decisions: TD-03, TD-08, TD-09, TD-16.
 
 Two MongoDB databases, two clients, two very different rule sets.
 
@@ -42,108 +42,168 @@ Two MongoDB databases, two clients, two very different rule sets.
 
 ## Part B — Monitor DB (payMonitor) — read/write
 
-Conventions: camelCase fields (TD-04); `_id: ObjectId`; every doc has `createdAt`, `updatedAt` (UTC `Date`); references are `ObjectId` named `<entity>Id`.
-Enum-like values are stored as the UPPER_SNAKE constants from `src/constants` (e.g. requirements' recipient type `normal`/`master` is stored as `NORMAL`/`MASTER`; UI shows friendly labels).
+### B.0 Field naming convention (TD-16) — same as the subscription backend
+
+Every stored field (top level **and** nested) starts with a one-letter type prefix, then PascalCase. Verified against `jojo_subscription_backend_2_0` (`sName`, `sEmail`, `bIsActive`, `dCreatedAt`, `eStatus`, `nRetryAttempts`, `oPaymentDetails`, `aFeatureIds`, `iUserId`).
+
+| Prefix | Type | Example |
+|--------|------|---------|
+| `s` | string | `sName`, `sEmail`, `sPasswordHash` |
+| `n` | number (int or float) | `nRetryCount`, `nAgeMs` |
+| `b` | boolean | `bIsActive`, `bIsEnabled` |
+| `d` | Date | `dCreatedAt`, `dSentAt` |
+| `e` | enum value (stored as an UPPER_SNAKE constant) | `eStatus`, `eRole`, `eAlertMode` |
+| `o` | embedded object | `oThreshold`, `oState` |
+| `a` | array | `aRecipients`, `aAttempts` |
+| `i` | ObjectId reference to another document | `iMonitorId`, `iCreatedBy` |
+
+Rules:
+- `_id` stays `_id`. Collection names stay snake_case plural (requirements §6).
+- Booleans keep the `Is/Has` word after the prefix: `bIsActive`, `bHasDescIndex`.
+- Arrays of ObjectIds: `aAffectedMonitorIds`. Number units still go at the end: `nThresholdMs`.
+- Every document has `dCreatedAt` and `dUpdatedAt` (UTC `Date`).
+- Enum values are the UPPER_SNAKE constants from `src/constants` (e.g. requirements' recipient type `normal`/`master` is stored as `eType: 'NORMAL' | 'MASTER'`; UI shows friendly labels).
+- The prefix describes the **stored** type. If a field can be null, the prefix still names the non-null type (`dClosedAt: Date | null`).
+- Applies **only to the persistence layer**: stored documents, their `<Entity>Doc` types, mappers, repositories, indexes. Services, forms, API bodies, view-models, query params and logs use camelCase; `<module>.mapper.ts` converts between them (TD-16).
+
+```ts
+// webhookMonitors.types.ts
+export interface WebhookMonitorDoc {            // stored shape: prefixed
+  _id: ObjectId; sName: string; sGatewayName: string; oThreshold: StoredDuration; bIsEnabled: boolean; /* … */
+}
+export interface WebhookMonitor {               // domain shape: camelCase, used by services/controllers/views/API
+  id: string; name: string; gatewayName: string; threshold: Duration; isEnabled: boolean; /* … */
+}
+// webhookMonitors.mapper.ts
+export function toWebhookMonitor(doc: WebhookMonitorDoc): WebhookMonitor { /* sName → name, … */ }
+export function toWebhookMonitorDoc(input: CreateWebhookMonitorInput, ctx: { now: Date; userId: ObjectId; daysPerMonth: number }): Omit<WebhookMonitorDoc, '_id'> { /* name → sName, … */ }
+```
+
 Collections beyond requirements §6 added by this design: `scheduler_locks` (TD-05) and `sessions` (TD-11).
 
 ### B.1 Collections
 
+Shared shape used for every duration (`oCheckInterval`, `oThreshold`, `oRepeatInterval`):
+`{ nValue: number, eUnit: 'MINUTE'|'HOUR'|'DAY'|'WEEK'|'MONTH', nMs: number }` (TD-08).
+
 #### `users` (§3)
 | Field | Type | Notes |
 |-------|------|-------|
-| name | string | |
-| email | string | lower-cased, trimmed |
-| passwordHash | string | bcrypt cost 12 — never returned to views/API |
-| role | `ADMIN` \| `VIEWER` | |
-| isActive | boolean | |
-| lastLoginAt | Date \| null | |
-Indexes: `{ email: 1 }` unique.
+| sName | string | |
+| sEmail | string | lower-cased, trimmed |
+| sPasswordHash | string | bcrypt cost 12, never returned to views/API |
+| eRole | `ADMIN` \| `VIEWER` | |
+| bIsActive | boolean | |
+| dLastLoginAt | Date \| null | |
+Indexes: `{ sEmail: 1 }` unique.
 
 #### `recipients` (FR-R1..R3)
-| name | email | isActive | type `NORMAL`\|`MASTER` |
-Indexes: `{ email: 1 }` unique; `{ isActive: 1, type: 1 }`.
-Invariant "≥ 1 MASTER exists" is enforced in the service (master cannot be deleted/deactivated; type cannot be changed from MASTER).
+| Field | Type |
+|-------|------|
+| sName | string |
+| sEmail | string (lower-cased) |
+| bIsActive | boolean |
+| eType | `NORMAL` \| `MASTER` |
+Indexes: `{ sEmail: 1 }` unique; `{ bIsActive: 1, eType: 1 }`.
+Invariant "≥ 1 MASTER exists" is enforced in the service (a master cannot be deleted or deactivated; `eType` cannot be changed from MASTER).
 
 #### `webhook_monitors` (FR-W1)
 | Field | Type |
 |-------|------|
-| name | string (unique among non-deleted) |
-| gatewayName | string |
-| sourceCollection | string |
-| timestampKey | string |
-| checkInterval | `{ value, unit: 'minute'\|'hour', ms }` |
-| threshold | `{ value, unit: 'minute'..'month', ms }` |
-| alertMode | `ONCE_WITH_RECOVERY`\|`EVERY_CHECK`\|`REPEAT_EVERY` |
-| repeatInterval | `{ value, unit, ms }` \| absent (only when `REPEAT_EVERY`) |
-| isEnabled | boolean |
-| hasDescIndexAtSave | boolean (for the warning badge) |
-| state | `{ currentStatus, lastCheckAt, nextCheckAt, lastCheckId, openIncidentId, lastAlertAt, reminderCount }` |
-| deletedAt | Date \| null |
-| createdBy / updatedBy | ObjectId (users) |
-Indexes: `{ name: 1 }` unique with `partialFilterExpression: { deletedAt: null }`; `{ isEnabled: 1, deletedAt: 1 }`.
+| sName | string (unique among non-deleted) |
+| sGatewayName | string |
+| sSourceCollection | string |
+| sTimestampKey | string (the Source DB field name, e.g. `dCreatedAt`) |
+| oCheckInterval | duration, units `MINUTE`\|`HOUR` |
+| oThreshold | duration, units `MINUTE`..`MONTH` |
+| eAlertMode | `ONCE_WITH_RECOVERY`\|`EVERY_CHECK`\|`REPEAT_EVERY` |
+| oRepeatInterval | duration (units `MINUTE`\|`HOUR`\|`DAY`), absent unless `REPEAT_EVERY` |
+| bIsEnabled | boolean |
+| bHasDescIndexAtSave | boolean (for the warning badge) |
+| oState | `{ eCurrentStatus, dLastCheckAt, dNextCheckAt, iLastCheckId, iOpenIncidentId, dLastAlertAt, nReminderCount }` |
+| dDeletedAt | Date \| null |
+| iCreatedBy / iUpdatedBy | ObjectId (users) |
+Indexes: `{ sName: 1 }` unique with `partialFilterExpression: { dDeletedAt: null }`; `{ bIsEnabled: 1, dDeletedAt: 1 }`.
 
 #### `endpoint_monitors` (FR-E1)
-Same shape minus source fields; plus `serverName`, `url`, `retryCount` (0..`ENDPOINT_MAX_RETRY_COUNT`).
-Indexes: `{ serverName: 1 }` unique partial on `deletedAt: null`; `{ isEnabled: 1, deletedAt: 1 }`.
+Same shape minus `sGatewayName`, `sSourceCollection`, `sTimestampKey`, `bHasDescIndexAtSave`; plus `sServerName`, `sUrl`, `nRetryCount` (0..`ENDPOINT_MAX_RETRY_COUNT`). No `sName`; `sServerName` is the unique display name.
+Indexes: `{ sServerName: 1 }` unique partial on `dDeletedAt: null`; `{ bIsEnabled: 1, dDeletedAt: 1 }`.
 
-#### `checks` (FR-H1) — append-only, high volume
+#### `checks` (FR-H1): append-only, high volume
 | Field | Type |
 |-------|------|
-| monitorId | ObjectId |
-| monitorType | `WEBHOOK`\|`ENDPOINT` |
-| trigger | `SCHEDULE`\|`MANUAL` |
-| startedAt / finishedAt | Date |
-| result | `OK`\|`STALE`\|`NO_DATA`\|`DOWN`\|`ERROR` |
-| webhook? | `{ lastDocId, lastDocTimestamp, ageMs, thresholdMs, reason? }` |
-| endpoint? | `{ attempts: [{ n, statusCode?, responseTimeMs, errorCode?, errorMessage? }] }` |
-| error? | `{ code, message }` (sanitized; no stack, no URI with credentials) |
-Indexes: `{ monitorId: 1, startedAt: -1 }` (history + charts); `{ startedAt: -1 }` (global views).
-Growth estimate: 20 monitors × 1/min ≈ 29k docs/day ≈ 10.5M/year. Retention = keep everything (FR-H3) → see §B.5.
+| iMonitorId | ObjectId |
+| eMonitorType | `WEBHOOK`\|`ENDPOINT` |
+| eTrigger | `SCHEDULE`\|`MANUAL` |
+| dStartedAt / dFinishedAt | Date |
+| eResult | `OK`\|`STALE`\|`NO_DATA`\|`DOWN`\|`ERROR` |
+| oWebhook? | `{ iLastDocId?, dLastDocTimestamp?, nAgeMs?, nThresholdMs, eReason? }` |
+| oEndpoint? | `{ aAttempts: [{ nAttempt, nStatusCode?, nResponseTimeMs, sErrorCode?, sErrorMessage? }] }` |
+| oError? | `{ sCode, sMessage }` (sanitized; no stack, no URI with credentials) |
+`oWebhook.iLastDocId` holds the Source DB document's `_id`. It is usually an ObjectId, but the Source DB doesn't guarantee that, so the document type is `ObjectId | string`.
+Indexes: `{ iMonitorId: 1, dStartedAt: -1 }` (history + charts); `{ dStartedAt: -1 }` (global views).
+Growth estimate: 20 monitors × 1/min ≈ 29k docs/day ≈ 10.5M/year. Retention = keep everything (FR-H3), see §B.5.
 
 #### `incidents` (FR-A3, FR-A4a)
-`monitorId` (null for source outages), `kind` (`MONITOR`\|`SOURCE_ERROR`), `openedAt`, `closedAt|null`, `openingResult`, `affectedMonitorIds[]` (source outages), `lastCheckId`.
-Indexes: `{ monitorId: 1, openedAt: -1 }`; `{ monitorId: 1, closedAt: 1 }` unique partial on `closedAt: null` → **at most one open incident per monitor**; same for `{ kind: 1 }` partial `{ kind: 'SOURCE_ERROR', closedAt: null }`.
+| Field | Type |
+|-------|------|
+| iMonitorId | ObjectId \| null (null for source outages) |
+| eKind | `MONITOR`\|`SOURCE_ERROR` |
+| dOpenedAt | Date |
+| dClosedAt | Date \| null |
+| eOpeningResult | check result |
+| aAffectedMonitorIds | ObjectId[] (source outages) |
+| iLastCheckId | ObjectId |
+Indexes: `{ iMonitorId: 1, dOpenedAt: -1 }`; `{ iMonitorId: 1 }` unique partial on `{ eKind: 'MONITOR', dClosedAt: null }` → **at most one open incident per monitor**; `{ eKind: 1 }` unique partial on `{ eKind: 'SOURCE_ERROR', dClosedAt: null }` → at most one open source outage.
 
 #### `alerts` (FR-A1..A6)
 | Field | Type |
 |-------|------|
-| dedupeKey | string (TD-09) |
-| type | alert type |
-| monitorId / incidentId / checkId | ObjectId \| null |
-| monitorSnapshot | `{ type, name, gatewayName?, sourceCollection?, timestampKey?, url?, thresholdMs?, checkIntervalMs? }` |
-| recipients | `[{ name, email, type }]` resolved at creation |
-| subject / textBody / htmlBody | string (rendered at creation — what was sent is what's stored) |
-| status | `PENDING`\|`RETRYING`\|`SENT`\|`FAILED` |
-| attempts | `[{ at, ok, errorCode?, errorMessage? }]` |
-| nextAttemptAt | Date \| null |
-| lockedUntil | Date \| null (dispatcher claim) |
-| sentAt / messageId / failureReason | |
-Indexes: `{ dedupeKey: 1 }` unique; `{ status: 1, nextAttemptAt: 1 }` (dispatcher); `{ monitorId: 1, createdAt: -1 }`; `{ createdAt: -1 }`.
+| sDedupeKey | string (TD-09) |
+| eType | alert type |
+| iMonitorId / iIncidentId / iCheckId | ObjectId \| null |
+| oMonitorSnapshot | `{ eMonitorType, sName, sGatewayName?, sSourceCollection?, sTimestampKey?, sUrl?, nThresholdMs?, nCheckIntervalMs? }` |
+| aRecipients | `[{ sName, sEmail, eType }]` resolved at creation |
+| sSubject / sTextBody / sHtmlBody | string (rendered at creation, so what was sent is what's stored) |
+| eStatus | `PENDING`\|`RETRYING`\|`SENT`\|`FAILED` |
+| aAttempts | `[{ dAt, bIsSuccess, sErrorCode?, sErrorMessage? }]` |
+| dNextAttemptAt | Date \| null |
+| dLockedUntil | Date \| null (dispatcher claim) |
+| dSentAt / sMessageId / sFailureReason | |
+Indexes: `{ sDedupeKey: 1 }` unique; `{ eStatus: 1, dNextAttemptAt: 1 }` (dispatcher); `{ iMonitorId: 1, dCreatedAt: -1 }`; `{ dCreatedAt: -1 }`.
 
 #### `audit_logs` (FR-H2)
-`actorUserId`, `actorEmail`, `action` (`CREATE|UPDATE|DELETE|PAUSE|RESUME|RESEND|LOGIN`…), `entityType`, `entityId`, `before`, `after` (with `passwordHash` stripped), `at`.
-Indexes: `{ entityType: 1, entityId: 1, at: -1 }`; `{ at: -1 }`.
+| Field | Type |
+|-------|------|
+| iActorUserId | ObjectId |
+| sActorEmail | string |
+| eAction | `CREATE`\|`UPDATE`\|`DELETE`\|`PAUSE`\|`RESUME`\|`RESEND`\|`LOGIN`… |
+| eEntityType | `USER`\|`RECIPIENT`\|`WEBHOOK_MONITOR`\|`ENDPOINT_MONITOR` |
+| iEntityId | ObjectId |
+| oBefore / oAfter | object (with `sPasswordHash` stripped) |
+| dAt | Date |
+Indexes: `{ eEntityType: 1, iEntityId: 1, dAt: -1 }`; `{ dAt: -1 }`.
 
 #### `scheduler_locks` (TD-05)
-`_id: 'scheduler'`, `ownerId` (hostname+pid+uuid), `expiresAt`. Acquire/renew with `findOneAndUpdate({ _id, $or:[{ownerId}, {expiresAt:{$lt:now}}] }, ..., { upsert: true })` — duplicate key on upsert = someone else holds it.
+`_id: 'scheduler'`, `sOwnerId` (hostname+pid+uuid), `dExpiresAt`. Acquire/renew with `findOneAndUpdate({ _id, $or: [{ sOwnerId }, { dExpiresAt: { $lt: now } }] }, ..., { upsert: true })`. A duplicate key error on upsert means someone else holds the lock.
 
 #### `sessions`
-Owned by `connect-mongo` (TTL handled by the library).
+Owned by `connect-mongo`, which controls its field names and TTL. The prefix convention does not apply.
 
 ### B.2 Concurrency & atomicity
 | Risk | Control |
 |------|---------|
-| Scheduled and manual run of same monitor overlap | In-process per-monitor in-flight set (single instance); manual run waits/returns "already running". |
-| Two dispatch loops send the same alert | Atomic claim via `lockedUntil` in `findOneAndUpdate`; lease lock. |
-| Crash between "alert inserted" and "state updated" | Dedupe key makes re-creation a no-op; next check recomputes from `incidents` (source of truth for open incident). |
+| Scheduled and manual run of same monitor overlap | In-process per-monitor in-flight set (single instance); manual run returns "already running". |
+| Two dispatch loops send the same alert | Atomic claim via `dLockedUntil` in `findOneAndUpdate`; lease lock. |
+| Crash between "alert inserted" and "state updated" | `sDedupeKey` makes re-creation a no-op; next check recomputes from `incidents` (source of truth for the open incident). |
 | Two open incidents for one monitor | Unique partial index (B.1 incidents). |
-| Admin edits monitor while check running | Runner works on the snapshot it loaded; state update uses `$set` on `state.*` only, never overwrites config fields. |
-| Last admin demoted concurrently | Service checks count then updates with a conditional filter; accept tiny race (rare admin op) — documented. |
+| Admin edits monitor while check running | Runner works on the snapshot it loaded; state update uses `$set` on `oState.*` only, never overwrites config fields. |
+| Last admin demoted concurrently | Service checks count then updates with a conditional filter; accept the tiny race (rare admin op). |
 Transactions are **not** required by this design (open question A1).
 
 ### B.3 Pagination & projection
-- History/alert lists: keyset pagination on `(startedAt|createdAt, _id)` descending; page size default 50, max 200.
-- Lists project only displayed fields; never load `textBody/htmlBody` in list views.
+- History/alert lists: keyset pagination on `(dStartedAt|dCreatedAt, _id)` descending; page size default 50, max 200.
+- Lists project only displayed fields; never load `sTextBody`/`sHtmlBody` in list views.
 - Chart series: aggregate server-side, cap points (≤ 500) by bucketing for 7d/30d ranges.
 
 ### B.4 Schema evolution

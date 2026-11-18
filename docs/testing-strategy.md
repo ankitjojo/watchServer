@@ -31,6 +31,7 @@ Must have tests before merge (**critical** — each is a requirement with money-
 | Endpoint probe | DOWN only when all attempts fail; success on retry → no alert |
 | Scheduler | in-flight skip, upsert/remove reschedules, lease lost stops timers, graceful stop awaits in-flight |
 | Config | invalid `EMAIL_RETRY_BACKOFF_MIN` etc. → startup error naming the variable |
+| Mappers (TD-16) | doc → domain → doc round-trip keeps every field; optional/null fields; old docs missing new optional fields still map |
 
 Lower priority: simple CRUD happy paths (one per module), EJS render smoke tests (page returns 200 and contains key heading).
 

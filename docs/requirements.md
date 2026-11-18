@@ -129,7 +129,7 @@ It has two parts:
 **FR-A1. Store first, then send.** When a check needs a notification:
 1. Insert an **alert** document with status `PENDING`. It holds the monitor snapshot, alert type, check reference, recipient list and email subject/body.
 2. Send the email.
-3. Update the alert to `SENT` (with `sentAt` and the SMTP message ID) or start the retry flow.
+3. Update the alert to `SENT` (with `dSentAt` and the SMTP message ID in `sMessageId`) or start the retry flow.
 
 **FR-A2. Retry when sending fails.** On an SMTP error, retry using the backoff list in `EMAIL_RETRY_BACKOFF_MIN` (default `1,5,15`, which means 3 retries after 1, 5 and 15 minutes). After the last failure, set the status to `FAILED` and keep the error text. FAILED alerts are highlighted on the dashboard and have a **Resend** button (admin only).
 - Status flow: `PENDING → SENT` or `PENDING → RETRYING → SENT | FAILED`. A manual resend moves `FAILED → PENDING`.
@@ -168,7 +168,7 @@ It has two parts:
 
 ### 4.4 Recipients (Alert Email List)
 
-**FR-R1.** Admin can create, read, update and delete recipients. Fields: **name**, **email** (unique, validated), **isActive**, **type** (`normal` or `master`).
+**FR-R1.** Admin can create, read, update and delete recipients. Fields: **sName**, **sEmail** (unique, validated), **bIsActive**, **eType** (`normal` or `master`, stored as `NORMAL`/`MASTER`).
 
 **FR-R2.** Only **active** normal recipients receive alerts. Master recipients **always** receive every alert.
 
@@ -292,10 +292,12 @@ All tuning values live in **one typed config module** (`src/config/`). Each valu
 
 ## 6. Data (Monitor DB Collections)
 
+Field names use the **same type-prefix convention as the subscription DB** (`s` string, `n` number, `b` boolean, `d` date, `e` enum, `o` object, `a` array, `i` ObjectId reference), e.g. `sName`, `bIsActive`, `dCreatedAt`. Full field lists: `docs/database-design.md`.
+
 | Collection | Purpose |
 |------------|---------|
-| `users` | Dashboard login users: name, email, passwordHash, role, isActive |
-| `recipients` | Alert email list: name, email, isActive, type (`normal`/`master`) |
+| `users` | Dashboard login users: sName, sEmail, sPasswordHash, eRole, bIsActive |
+| `recipients` | Alert email list: sName, sEmail, bIsActive, eType (`NORMAL`/`MASTER`) |
 | `webhook_monitors` | Webhook monitor configs (FR-W1) and current status/incident state |
 | `endpoint_monitors` | Endpoint monitor configs (FR-E1) and current status/incident state |
 | `checks` | Every check result (FR-H1) |

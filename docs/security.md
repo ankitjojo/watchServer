@@ -49,7 +49,7 @@ EJS `<%=` everywhere for dynamic values (monitor names, gateway names, URLs, err
 ### 2.8 NoSQL injection
 - Zod schemas reject objects where strings are expected (`{ "$gt": "" }` in email field → 400).
 - Never pass `req.body`/`req.query` objects directly into filters; build filters from parsed fields.
-- Admin-supplied `timestampKey` used in `sort`/`projection` → regex `^[A-Za-z_][A-Za-z0-9_.]{0,63}$`, no `$` (see database-design A.2). `sourceCollection` must be in the live `listCollections` result.
+- Admin-supplied `sTimestampKey` used in `sort`/`projection` → regex `^[A-Za-z_][A-Za-z0-9_.]{0,63}$`, no `$` (see database-design A.2). `sSourceCollection` must be in the live `listCollections` result.
 
 ### 2.9 SSRF (endpoint monitors)
 - Allowed schemes: `http`, `https`. Reject credentials in URL (`user:pass@`).
@@ -77,7 +77,7 @@ See api-standards §6. Also cap concurrency of manual runs per user.
 `npm audit --omit=dev` in the quality gate; review advisories before upgrades; lockfile committed; no packages without a stated purpose (testing-strategy §Dependencies).
 
 ### 2.14 Logging & retention of sensitive data
-- Redact: `password`, `passwordHash`, `*.authorization`, `cookie`, `set-cookie`, `_csrf`, `SMTP_PASS`, URIs, URL query values.
+- Redact: `password`, `sPassword`, `sPasswordHash`, `*.authorization`, `cookie`, `set-cookie`, `_csrf`, `SMTP_PASS`, URIs, URL query values.
 - Email addresses: allowed in audit logs and alert records (needed for FR-H2/FR-A1), not in general request logs.
 - Retention: keep everything (FR-H3); audit log is append-only from the app.
 

@@ -72,7 +72,7 @@ Values that MUST be centralized (they appear in requirements):
 - Alert/email statuses: `PENDING RETRYING SENT FAILED`
 - Alert modes: `ONCE_WITH_RECOVERY EVERY_CHECK REPEAT_EVERY`
 - Roles: `ADMIN VIEWER` · Recipient types: `NORMAL MASTER`
-- Duration units: interval `minute hour`; threshold `minute hour day week month`; repeat `minute hour day`
+- Duration units (stored as `eUnit`): interval `MINUTE HOUR`; threshold `MINUTE HOUR DAY WEEK MONTH`; repeat `MINUTE HOUR DAY`
 - Check triggers: `SCHEDULE MANUAL`
 - Monitor DB collection names (single `COLLECTIONS` object)
 
@@ -92,8 +92,10 @@ Source DB names (`dCreatedAt`, collection names) are data typed by admins — ne
 | Constant objects | UPPER_SNAKE | `ALERT_TYPE` |
 | Env vars | UPPER_SNAKE | `ENDPOINT_TIMEOUT_MS` (unit suffix for numbers: `_MS`, `_MIN`) |
 | Mongo collections | snake_case plural | `webhook_monitors` (requirements §6) |
-| Mongo fields | camelCase (TD-04) | `isActive`, `lastCheckAt` |
-| Booleans | `is/has/should` prefix | `isActive`, `hasDescIndex` |
+| Mongo document fields + `<Entity>Doc` types (persistence layer only) | type prefix + PascalCase, same as subscription DB (TD-16, database-design §B.0) | `sName`, `bIsActive`, `dCreatedAt`, `eStatus`, `nRetryCount`, `oThreshold`, `aRecipients`, `iMonitorId` |
+| Domain types, form fields, JSON request/response fields, view-models | camelCase; `_id` exposed as `id` | `name`, `isActive`, `createdAt`, `threshold.value` |
+| Doc type vs domain type names | `<Entity>Doc` vs `<Entity>` | `WebhookMonitorDoc` / `WebhookMonitor` |
+| Local boolean variables | `is/has/should` prefix | `isStale`, `hasDescIndex` |
 | Durations in code | unit suffix | `thresholdMs`, `retryDelayMs` |
 
 ## 5. Function & module shape

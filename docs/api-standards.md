@@ -77,8 +77,9 @@ HTML forms only support GET/POST, so page mutations use `POST /<resource>/:id/<a
 ## 3. Validation
 
 - Every route has a Zod schema for `params`, `query`, `body` in `<module>.schemas.ts`. A shared `validate({ params, query, body })` middleware parses and attaches typed values to `res.locals.input` (no mutation of `req.query` — Express 5 makes it a getter).
+- Request and response bodies, form field names and query params are **camelCase** (`name`, `threshold.value`, `alertMode`). Never expose stored prefixed names (`sName`) or raw documents through the API or views; return mapped domain/DTO objects (TD-16). `_id` is exposed as `id` (string).
 - Coerce numbers from form strings explicitly (`z.coerce.number().int().positive()`), bound every number and string (`max()`), trim strings, lower-case emails.
-- Cross-field rules in `.superRefine` (e.g. `repeatInterval` required iff `alertMode === 'REPEAT_EVERY'` and `repeatInterval.ms ≥ checkInterval.ms`).
+- Cross-field rules in `.superRefine` (e.g. `repeatInterval` required iff `alertMode === 'REPEAT_EVERY'` and `repeatInterval` in ms ≥ `checkInterval` in ms).
 - Browser validation is UX only; the server re-validates everything.
 - `ObjectId` params: validate with a shared `objectIdSchema` before hitting the DB.
 
@@ -89,8 +90,8 @@ HTML forms only support GET/POST, so page mutations use `POST /<resource>/:id/<a
 
 ## 5. Idempotency
 - "Run now": in-flight guard → `409 ALREADY_RUNNING` instead of a parallel run.
-- Resend: only allowed from `FAILED`; conditional update `{_id, status: 'FAILED'}` → second click gets 409.
-- Pause/resume: idempotent (`$set isEnabled`), returns current state.
+- Resend: only allowed from `FAILED`; conditional update `{_id, eStatus: 'FAILED'}` → second click gets 409.
+- Pause/resume: idempotent (`$set bIsEnabled`), returns current state.
 - Page form double-submit: POST → 303 redirect; create uses unique indexes so duplicates become 409.
 
 ## 6. Rate limiting
