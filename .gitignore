@@ -1,0 +1,18 @@
+# Dependencies & build output
+node_modules/
+dist/
+coverage/
+
+# Environment & secrets — never commit real values; use .env.example
+.env
+.env.*
+!.env.example
+
+# Logs & OS / editor noise
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Claude Code personal settings (team rules in .claude/rules/ ARE committed)
+.claude/settings.local.json

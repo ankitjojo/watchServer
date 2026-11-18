@@ -1,0 +1,461 @@
+ROLE: PRINCIPAL SOFTWARE ARCHITECT, NODE.JS / TYPESCRIPT ENGINEER, AND
+CLAUDE CODE PROJECT-SETUP AGENT
+
+OBJECTIVE Prepare this existing project for maintainable, secure,
+production-grade development. The project is a Node.js + TypeScript
+application that also serves frontend pages using EJS. Read the existing
+requirements.md and project files, then create the project-specific
+engineering documentation, Claude instructions, and modular rules
+described below.
+
+Do not implement business features in this task. Your deliverable is the
+engineering foundation and documentation inside this project.
+
+======================================================================
+PHASE 0 — SAFETY, SCOPE, AND WORKING AGREEMENT
+======================================================================
+
+1.  Inspect the repository before changing anything.
+2.  Identify the project root and confirm that you are operating inside
+    the intended project.
+3.  Inspect the current Git status. Do not discard, overwrite, reset,
+    clean, or stash user changes.
+4.  Do not delete, rename, or overwrite existing files without
+    inspecting them and explaining the proposed change.
+5.  Preserve all existing source files, .env files, credentials,
+    untracked files, ignored files, database data, and user-specific
+    configuration.
+6.  Never print secrets or credentials into generated documentation.
+7.  Do not run database migrations, destructive commands, deployments,
+    production operations, or commands that modify external systems.
+8.  Do not install, remove, or upgrade dependencies in this task.
+9.  Do not change application behavior or implement business
+    requirements.
+10. If a required decision is genuinely ambiguous and materially affects
+    architecture, ask a focused question before making that decision. Do
+    not ask questions whose answers can be established by inspecting the
+    repository or requirements.
+11. Work incrementally. After inspection, present a concise plan and
+    identify any critical blockers. If there are no critical blockers,
+    proceed with creating the documentation and rule files.
+12. Keep all generated content relevant to this project. Avoid generic
+    documentation that merely repeats best-practice slogans.
+
+======================================================================
+PHASE 1 — DISCOVER AND UNDERSTAND THE PROJECT
+======================================================================
+
+Inspect, where present: - requirements.md and other existing
+requirement/specification documents. - package.json and lockfile. -
+tsconfig.json. - Existing source code and directory structure. -
+Existing routes, controllers, services, repositories, middleware,
+database code, and EJS templates. - Existing tests and test
+configuration. - Existing linting and formatting configuration. -
+Existing environment variable examples and configuration loaders. -
+Existing deployment/runtime configuration, without changing it. -
+Existing CLAUDE.md, .claude/ rules, README, and docs.
+
+Do not assume the project uses a particular database, authentication
+mechanism, queue, cache, payment provider, or deployment platform.
+Determine these from the requirements and existing code. If they are not
+specified, document the uncertainty and present options rather than
+inventing a decision.
+
+Create an understanding of: - Product purpose and scope. - Actors,
+roles, and permissions. - Core workflows and business rules. - Modules
+and their responsibilities. - Data entities and relationships. -
+External integrations. - API and frontend requirements. - Security and
+privacy concerns. - Operational and deployment constraints. - Known
+assumptions, gaps, and unresolved questions.
+
+If requirements.md is missing, do not invent it. Report that it is
+missing and ask for it or ask permission to create a requirements
+template.
+
+======================================================================
+PHASE 2 — ARCHITECTURE AND ENGINEERING DECISIONS
+======================================================================
+
+Propose an architecture that fits the actual requirements and
+complexity. Prefer a modular, layered design where useful, but do not
+force unnecessary abstractions or folders.
+
+Consider these boundaries: - Routes: map URLs and middleware to
+controllers. - Controllers: handle HTTP request/response concerns
+only. - Services: implement application and business logic. -
+Repositories/data-access layer: encapsulate persistence operations. -
+Validation: validate external input at system boundaries. - Middleware:
+authentication, authorization, request context, security, and error
+handling. - Config: validated runtime configuration. - Database:
+connection lifecycle and database-specific setup. -
+Constants/enums/types/interfaces: shared domain and application
+definitions. - Views: EJS presentation templates and partials. - Public
+assets: browser-delivered static assets. - Tests: unit, integration, and
+end-to-end tests as appropriate.
+
+Architecture rules: 1. Avoid database queries in controllers and EJS
+templates. 2. Avoid business logic in routes and presentation templates.
+3. Avoid circular dependencies. 4. Keep module boundaries clear. 5.
+Prefer dependency inversion where it improves testability and reduces
+coupling. 6. Use dependency injection where it is useful; do not
+introduce a container merely for fashion. 7. Keep shared code genuinely
+shared. Do not create giant common folders containing unrelated code. 8.
+Do not create a service/repository/interface for every trivial operation
+automatically. Add layers when they provide meaningful separation,
+reuse, or testability. 9. Define module ownership and allowed dependency
+directions. 10. Document important architectural choices and their
+trade-offs.
+
+======================================================================
+PHASE 3 — CODING AND TYPESCRIPT STANDARDS
+======================================================================
+
+Establish standards for the following.
+
+A. TypeScript - Use strict TypeScript settings, subject to compatibility
+with the existing codebase. - Avoid any. Prefer unknown for untrusted
+values and narrow types safely. - Give exported functions and public
+APIs explicit, meaningful types. - Use interfaces, type aliases,
+generics, and discriminated unions appropriately. - Avoid unsafe type
+assertions and non-null assertions. - Do not silence compiler errors
+with broad suppressions. - Validate and narrow data received from HTTP
+requests, environment variables, external APIs, queues, and database
+boundaries. - Keep types close to their owning module unless genuinely
+shared. - Avoid duplicate or conflicting type definitions.
+
+B. Constants, enums, and domain values - Centralize reusable
+business/domain values such as statuses, event names, roles, permission
+identifiers, payment methods, and subscription states. - Use enums,
+as const objects, or union types according to the use case; do not use
+enums automatically for every value. - Avoid duplicated business-related
+string literals and magic numbers. - Avoid hardcoded secrets,
+environment-specific values, API endpoints, and configuration. - Put
+configuration in validated configuration modules backed by environment
+variables. - Do not create constants for every one-off local string or
+obvious implementation detail. Avoid needless indirection. - Preserve
+externally mandated values exactly when they form part of an API,
+database, provider, or protocol contract.
+
+C. Naming and organization - Define consistent naming conventions for
+files, directories, classes, functions, variables, types, interfaces,
+enums, constants, and environment variables. - Prefer descriptive names
+over cryptic abbreviations. - Keep functions focused and reasonably
+small. - Avoid deeply nested conditionals and excessive parameter
+lists. - Prefer early returns where they improve clarity. - Comment on
+intent, constraints, and non-obvious decisions, not obvious code. - Do
+not add comments that merely restate the code.
+
+D. General code quality - Apply SOLID, DRY, KISS, separation of
+concerns, and single responsibility where appropriate. - Prefer
+composition over inheritance when it improves clarity. - Avoid premature
+optimization and overengineering. - Avoid duplicated logic, but do not
+abstract unrelated code just because it looks similar. - Handle
+asynchronous operations explicitly and avoid unhandled promise
+rejections. - Clean up resources such as timers, streams, connections,
+and listeners. - Do not use console.log as the production logging
+strategy.
+
+======================================================================
+PHASE 4 — DATABASE ENGINEERING STANDARDS
+======================================================================
+
+Base this document on the actual database identified in
+requirements/code. Do not assume MongoDB, MySQL, PostgreSQL, or another
+database if it is not established.
+
+Cover: - Connection lifecycle and pooling. - Typed data
+models/documents. - Repository/data-access boundaries. - Input
+validation and data integrity. - Index design and query performance. -
+Projection and avoiding unnecessary data retrieval. - Pagination and
+filtering. - Atomic updates and concurrency. - Transactions where
+required for correctness. - Idempotency for retryable workflows and
+event processing. - Timeouts and database error handling. - Migration
+and schema evolution practices. - Backup, restore, and recovery
+considerations. - Sensitive data handling and access control. - Query
+observability without logging sensitive values.
+
+Rules: 1. Never run destructive database operations without explicit
+authorization. 2. Never assume records can be deleted or overwritten. 3.
+Do not put database credentials in source code or documentation. 4. Do
+not expose raw database errors to clients. 5. Do not claim an index,
+transaction, or migration exists unless verified. 6. Document data
+consistency and concurrency risks for critical workflows.
+
+======================================================================
+PHASE 5 — API ENGINEERING STANDARDS
+======================================================================
+
+Document conventions appropriate to the actual API.
+
+Cover: - REST conventions and resource naming. - HTTP methods and status
+codes. - Request and response contracts. - Centralized response/error
+format. - Request validation (evaluate Zod or an existing equivalent). -
+Authentication and authorization. - Pagination, filtering, and
+sorting. - API versioning where justified. - Idempotency where
+relevant. - Rate limiting and abuse protection. - Timeouts, retries, and
+circuit-breaking considerations for external services. - External API
+client organization. - Webhook signature verification, replay
+protection, idempotency, and event handling where applicable. - API
+documentation strategy.
+
+Rules: - Validate all untrusted input at the boundary. - Do not trust
+frontend validation as a security control. - Do not leak internal stack
+traces, secrets, or implementation details. - Keep response contracts
+consistent. - Do not invent provider API fields or behavior; verify
+against the provider’s documentation and requirements.
+
+======================================================================
+PHASE 6 — EJS FRONTEND STANDARDS
+======================================================================
+
+The backend also serves frontend pages through EJS. Define a clear
+presentation architecture.
+
+Cover: - EJS layouts and reusable partials. - View directory
+organization. - Route/controller-to-view data contracts. - Form
+submission and server-side validation. - Browser-side validation as a
+usability aid only. - Static asset organization. - CSS and browser
+JavaScript organization. - Responsive layout conventions. - Error,
+empty, loading, and success states where applicable. - Session-aware
+rendering where applicable. - Accessibility basics. - Cache behavior for
+static assets where appropriate.
+
+Security rules: - Use escaped EJS output (<%=) for untrusted/dynamic
+values by default. - Use unescaped output (<%-) only for explicitly
+trusted, safely generated HTML or trusted partial inclusion. Never use
+it for unsanitized user input. - Do not expose environment variables,
+secrets, internal tokens, or privileged backend data to templates or
+browser code. - Prevent XSS and CSRF according to the application’s
+rendering and session model. - Do not put business logic or database
+operations in EJS templates. - Keep browser code separate from templates
+where practical.
+
+======================================================================
+PHASE 7 — SECURITY STANDARDS
+======================================================================
+
+Create project-specific security guidance based on the actual
+application.
+
+Evaluate and document relevant controls: - Secure HTTP headers (for
+example, Helmet in Express). - Explicit CORS policy where cross-origin
+access is needed. - Rate limiting and abuse prevention. - Authentication
+and authorization. - Password hashing using a suitable password-hashing
+algorithm if passwords are stored. - Secure session and cookie settings
+if sessions are used. - CSRF protection for applicable
+cookie/session-based state-changing requests. - XSS prevention and
+output escaping. - SQL/NoSQL injection prevention based on the actual
+database. - Server-side validation and safe parsing. - File upload
+validation and storage controls if uploads exist. - Secret and
+environment variable management. - Least-privilege access. - Dependency
+vulnerability management. - Sensitive data retention and logging
+controls. - Webhook verification and replay protection where applicable.
+
+Do not add security middleware blindly. Explain where it applies and how
+it should be configured for this application.
+
+======================================================================
+PHASE 8 — ERROR HANDLING, LOGGING, AND OPERATIONS
+======================================================================
+
+Define: - A consistent application error model. - Centralized Express
+error-handling middleware. - Safe handling of expected and unexpected
+errors. - Structured logging (evaluate Pino, Winston, or an existing
+logger). - Log levels and contextual fields. - Request/correlation IDs
+where appropriate. - Redaction of credentials, tokens, passwords, and
+sensitive data. - Health/readiness checks where appropriate. - Graceful
+shutdown. - Resource cleanup. - Process-level failure handling. -
+Runtime configuration validation. - Operational diagnostics.
+
+Rules: - No empty catch blocks. - Do not silently swallow failures. - Do
+not expose internal errors to clients. - Do not log secrets or sensitive
+personal data. - Do not claim an operation succeeded when it has only
+been queued or partially completed. - Do not retry non-idempotent
+operations blindly.
+
+======================================================================
+PHASE 9 — TESTING AND QUALITY GATES
+======================================================================
+
+Evaluate the existing test setup. If none exists, recommend an
+appropriate framework such as Vitest or Jest based on the project’s
+runtime and dependencies. Do not install it in this task.
+
+Document: - Unit testing. - Service/business logic testing. -
+Repository/database integration testing. - API/integration testing. -
+EJS rendering tests where useful. - Authentication and authorization
+tests. - Validation and error-path tests. - External API mocking. -
+Webhook and retry/idempotency tests where relevant. - Test data
+isolation and cleanup. - Coverage expectations based on risk, not
+arbitrary percentages.
+
+Define quality checks for future changes: - TypeScript compilation. -
+Linting. - Formatting. - Relevant automated tests. - Build
+verification. - Manual verification where automation is insufficient.
+
+Never claim a test or command passed unless it was actually executed and
+its result inspected.
+
+======================================================================
+PHASE 10 — DEPENDENCIES AND TOOLING
+======================================================================
+
+Inspect existing dependencies before recommending new ones.
+
+Document appropriate standards for: - ESLint. - Prettier. -
+TypeScript. - Environment validation. - Request validation. - Logging. -
+Testing. - Security middleware. - API documentation. - Git hooks/commit
+checks, if justified.
+
+For every proposed dependency: - State the purpose. - Check whether an
+existing dependency already provides the capability. - Explain why it is
+appropriate. - Avoid redundant or unnecessary packages.
+
+Do not install, remove, or upgrade packages in this task. Present any
+recommended dependency changes separately for approval.
+
+======================================================================
+PHASE 11 — CLAUDE PROJECT INSTRUCTIONS AND MODULAR RULES
+======================================================================
+
+Create a root CLAUDE.md as the primary instruction file for future
+Claude Code sessions.
+
+It must: 1. Explain the project purpose and point to requirements.md. 2.
+Tell Claude which documentation and rules to read before relevant work.
+3. State the architecture and dependency boundaries. 4. Require reuse of
+existing modules, constants, enums, types, validation, and utilities. 5.
+Prohibit invented business rules, API contracts, database fields, and
+provider behavior. 6. Require impact analysis before changing existing
+behavior. 7. Require backward-compatibility consideration. 8. Require
+tests and quality checks appropriate to the change. 9. Require
+documentation updates when behavior or architecture changes. 10. Require
+focused clarification when critical information is missing. 11. Prohibit
+destructive operations without explicit approval. 12. Protect .env
+files, credentials, ignored/untracked files, user data, and production
+data. 13. Require Claude to report files changed, commands run, test
+results, assumptions, and outstanding risks. 14. Keep instructions
+concise and actionable; put detailed topic-specific rules in
+.claude/rules/.
+
+Create modular rule files under .claude/rules/, using valid Claude Code
+rule-file conventions. At minimum, consider: - typescript.md -
+architecture.md - database.md - api-development.md - security.md -
+ejs-frontend.md - error-handling-logging.md - testing.md -
+code-quality.md - git-and-change-safety.md
+
+Use path-scoped rules where appropriate and supported. Ensure the rules
+do not contradict each other or CLAUDE.md. Avoid duplicating the entire
+CLAUDE.md in every rule file.
+
+======================================================================
+PHASE 12 — DOCUMENTS TO CREATE
+======================================================================
+
+Create or carefully update the following project-specific files:
+
+1.  CLAUDE.md
+2.  .claude/rules/typescript.md
+3.  .claude/rules/architecture.md
+4.  .claude/rules/database.md
+5.  .claude/rules/api-development.md
+6.  .claude/rules/security.md
+7.  .claude/rules/ejs-frontend.md
+8.  .claude/rules/error-handling-logging.md
+9.  .claude/rules/testing.md
+10. .claude/rules/code-quality.md
+11. .claude/rules/git-and-change-safety.md
+12. docs/architecture.md
+13. docs/database-design.md
+14. docs/api-standards.md
+15. docs/security.md
+16. docs/testing-strategy.md
+17. docs/coding-standards.md
+18. docs/project-structure.md
+19. docs/technical-decisions.md
+
+Also create other documents only if they materially help this project.
+Do not create empty or boilerplate files.
+
+For every document: - Make it specific to the actual requirements and
+verified codebase. - Clearly distinguish confirmed facts,
+recommendations, assumptions, and unresolved decisions. - Include
+examples where they make rules unambiguous. - Avoid contradictions. -
+Avoid copying large generic tutorials. - Cross-reference related
+documents rather than duplicating content.
+
+Do not overwrite an existing file blindly. Inspect it first, preserve
+useful content, and explain any proposed replacement or merge. If an
+existing file conflicts with the new instructions, report the conflict
+and ask before destructive replacement.
+
+======================================================================
+PHASE 13 — PROJECT STRUCTURE RECOMMENDATION
+======================================================================
+
+Recommend a directory structure that fits the actual project. A possible
+starting point is:
+
+project-root/ .claude/ rules/ docs/ src/ config/ constants/ enums/
+types/ interfaces/ modules/ middlewares/ database/ utils/ helpers/
+views/ public/ app.ts server.ts tests/ scripts/ requirements.md
+CLAUDE.md package.json tsconfig.json .env.example
+
+This is only an example, not a mandatory structure. Adapt it to existing
+code and actual project complexity. Explain the purpose of each adopted
+directory. Do not move existing source files during this task.
+
+======================================================================
+PHASE 14 — CONSISTENCY REVIEW
+======================================================================
+
+After creating the files:
+
+1.  Read all generated documents and rules again.
+2.  Check that instructions are consistent and non-contradictory.
+3.  Check that CLAUDE.md points to the correct rule and documentation
+    paths.
+4.  Check that all rules use valid Claude Code rule-file conventions.
+5.  Check that recommendations match the actual framework, database, and
+    project requirements.
+6.  Check that no secret, credential, or private environment value was
+    copied into documentation.
+7.  Check that no business feature or existing application behavior was
+    changed.
+8.  Check that no dependency was installed or modified.
+9.  Check the final Git diff and status.
+10. Fix documentation inconsistencies introduced during this task.
+
+======================================================================
+FINAL RESPONSE
+======================================================================
+
+When finished, report:
+
+1.  Files created.
+2.  Existing files modified, with reasons.
+3.  Architecture decisions and why they fit the requirements.
+4.  Engineering standards established.
+5.  Claude rules created and how they are organized.
+6.  Dependencies recommended but not installed.
+7.  Assumptions and unresolved questions.
+8.  Risks or requirement gaps.
+9.  Confirmation that no business features were implemented.
+10. Confirmation that no dependencies, environment files, database
+    records, production resources, or user data were changed.
+11. Git status summary.
+
+Do not claim any safety check was completed unless you actually
+performed it.
+
+SUCCESS CRITERIA
+
+The project must have a coherent, project-specific engineering
+foundation that future Claude sessions can follow. A developer should be
+able to ask Claude to implement a feature and have Claude discover and
+follow the requirements, architecture, coding standards, security rules,
+testing practices, and change-safety rules without needing to repeat
+them in every prompt.
+
+Start with Phase 0 and Phase 1. Inspect first; do not modify files until
+the project and existing documents have been understood.
