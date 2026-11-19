@@ -162,7 +162,7 @@ It has two parts:
 
 **FR-A5. Recipients for each alert.** Every **active** recipient plus every **master** recipient. A source DB outage (`MONITOR_ERROR`, FR-A4a) is the exception. The list is worked out when the alert is created and is saved on the alert. If there are no recipients at all, the alert is still stored, with status `FAILED` and the reason "no recipients".
 
-**FR-A6. Subject format:** `[payMonitor] <TYPE> – <monitor name>`. Examples:
+**FR-A6. Subject format:** `[<APP_NAME>] <TYPE> – <monitor name>`, where `APP_NAME` is the product name from the environment (§5.1, default `payMonitor`). The examples below use the default:
 - `[payMonitor] WEBHOOK_STALE – Razorpay webhooks`
 - `[payMonitor] RECOVERED – Subscription API – prod`
 
@@ -284,6 +284,7 @@ All tuning values live in **one typed config module** (`src/config/`). Each valu
 | `DAYS_PER_MONTH` | `30` | Converts the `month` unit (FR-W1) |
 | `MIN_CHECK_INTERVAL_MIN` | `1` | Smallest allowed check interval |
 | `MAX_CHECK_INTERVAL_MIN` | `1440` | Largest allowed check interval (at most 1440 = 24 h; TD-30) |
+| `APP_NAME` | `payMonitor` | Product name people see: browser title and brand, email subject prefix (FR-A6) and footer, warnings and the startup log message. 1–40 characters, no control characters. Technical identifiers (MongoDB app name, log `service` field, default DB name) do not change (TD-35) |
 | `TIMEZONE` | `UTC` | Time zone for display and emails (FR-D7) |
 | `LOGIN_RATE_LIMIT` | `5 per 15 min` | Login attempts per IP |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | — | First admin (§3) |

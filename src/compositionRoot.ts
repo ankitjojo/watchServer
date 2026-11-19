@@ -131,6 +131,7 @@ export function buildServices(deps: ServiceDeps): Services {
   const checks = createChecksService({ repo: createChecksRepository(monitorDb), clock });
   const incidents = createIncidentsService({ repo: createIncidentsRepository(monitorDb), clock });
   const webhookMonitors = createWebhookMonitorsService({
+    appName: config.appName,
     repo: createWebhookMonitorsRepository(monitorDb),
     sourceData,
     audit,
@@ -161,6 +162,7 @@ export function buildServices(deps: ServiceDeps): Services {
       sourceErrorGroupWindowMs: config.alerts.sourceErrorGroupWindowMs,
       dashboardBaseUrl: config.dashboardBaseUrl,
       timeZone: config.display.timeZone,
+      appName: config.appName,
     },
   });
   const alerts: AlertsPort = deps.alerts ?? alertsService;

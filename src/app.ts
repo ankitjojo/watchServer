@@ -80,6 +80,12 @@ export function createApp(deps: AppDeps): Express {
   app.set('views', path.join(SRC_DIR, 'views'));
 
   app.use(requestContext);
+  // The product name people see (APP_NAME). Set first so even early errors (CSRF, bad session) can render
+  // an error page; views print it with <%= %>, so it is escaped.
+  app.use((_req, res, next) => {
+    res.locals.appName = config.appName;
+    next();
+  });
   // Ops endpoints need no session and no logging noise.
   app.use(createHealthRouter(deps.health));
 

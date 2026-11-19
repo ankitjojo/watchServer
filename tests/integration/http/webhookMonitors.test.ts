@@ -134,6 +134,29 @@ describe('creating a webhook monitor (acceptance 1)', () => {
     expect(page.text).toContain('The collection is empty');
   });
 
+  it('the missing-index warning names the product from APP_NAME, in the save message and on the detail page (plan app-name-from-env)', async () => {
+    const custom = await startTestApp({ mongo, sourceDb: t.sourceDb, config: { APP_NAME: 'Acme Watch' } });
+    const admin = await custom.loginAs(ADMIN);
+    const token = await csrfFor(admin, '/webhook-monitors/new');
+    const res = await admin
+      .post('/webhook-monitors/new')
+      .type('form')
+      .send({
+        _csrf: token,
+        ...form({ name: 'Acme no index', sourceCollection: 'amazon_pay_webhook_data' }),
+      });
+    expect(res.status).toBe(303);
+    const list = await admin.get('/webhook-monitors');
+    expect(list.text).toContain('Acme Watch cannot create it');
+    const stored = await custom.db
+      .collection(COLLECTIONS.WEBHOOK_MONITORS)
+      .findOne({ sName: 'Acme no index' });
+    const detail = await admin.get(`/webhook-monitors/${String(stored?.['_id'])}`);
+    expect(detail.text).toContain('Acme Watch cannot create it');
+    expect(list.text + detail.text).not.toContain('payMonitor cannot create it');
+    await custom.stop();
+  });
+
   it('warns about a missing index but still saves (section 5)', async () => {
     const admin = await t.loginAs(ADMIN);
     const res = await post(

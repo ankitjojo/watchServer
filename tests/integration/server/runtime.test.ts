@@ -35,12 +35,15 @@ interface Harness {
   events: string[];
   exits: number[];
   mailer: FakeMailer;
+  /** Human-readable log messages by event name (last one wins). */
+  messages: Map<string, string>;
   dbName: string;
   sourceName: string;
 }
 
 function harness(over: Partial<RuntimeDeps> = {}, env: Record<string, string> = {}): Harness {
   const events: string[] = [];
+  const messages = new Map<string, string>();
   const exits: number[] = [];
   const mailer = createFakeMailer();
   const dbName = `runtime_${Math.random().toString(36).slice(2)}`;
@@ -60,8 +63,9 @@ function harness(over: Partial<RuntimeDeps> = {}, env: Record<string, string> = 
     level: 'info',
     destination: {
       write(line: string) {
-        const parsed = JSON.parse(line) as { event?: string };
+        const parsed = JSON.parse(line) as { event?: string; msg?: string };
         if (parsed.event) events.push(parsed.event);
+        if (parsed.event && parsed.msg) messages.set(parsed.event, parsed.msg);
       },
     },
   });
@@ -83,7 +87,7 @@ function harness(over: Partial<RuntimeDeps> = {}, env: Record<string, string> = 
     services: { mailer, hasher: createPasswordHasher(4) },
     ...over,
   };
-  return { deps, events, exits, mailer, dbName, sourceName };
+  return { deps, events, messages, exits, mailer, dbName, sourceName };
 }
 
 function listenOnFreePort(app: Express): Promise<HttpListener> {
@@ -109,6 +113,19 @@ async function waitFor(condition: () => boolean | Promise<boolean>, ms = 10_000)
     if (Date.now() > until) throw new Error('condition not met in time');
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
+}
+
+/** Startup has really finished: the scheduler runs and the session store's TTL index exists. */
+async function settled(runtime: Runtime, dbName: string): Promise<void> {
+  await waitFor(async () => {
+    if (!runtime.services.scheduler.isActive()) return false;
+    const indexes = await mongo.client
+      .db(dbName)
+      .collection('sessions')
+      .indexes()
+      .catch(() => []);
+    return indexes.some((index) => index.key['expires'] === 1);
+  });
 }
 
 const lockDoc = (dbName: string) =>
@@ -178,6 +195,23 @@ describe('startup (architecture 5.5, review M4/M10)', () => {
     );
     await waitFor(() => h.mailer.sent.length === 1);
     expect(h.mailer.sent[0]?.subject).toBe('[payMonitor] WEBHOOK_STALE – Razorpay');
+  }, 60_000);
+
+  it('the startup log message names the product from APP_NAME; the event name stays app.started (plan app-name-from-env)', async () => {
+    const custom = harness({}, { APP_NAME: 'Acme Watch' });
+    const started = await startRuntime(custom.deps);
+    expect(custom.messages.get('app.started')).toBe('Acme Watch started');
+    expect(custom.events).toContain('app.started');
+    // Let startup settle before stopping: lease taken, scheduler running, and connect-mongo's background
+    // creation of the sessions index finished (closing the client mid-way rejects it, a known shutdown flake).
+    await settled(started, custom.dbName);
+    await started.shutdown('test', 0);
+
+    const standard = harness();
+    const defaults = await startRuntime(standard.deps);
+    expect(standard.messages.get('app.started')).toBe('payMonitor started');
+    await settled(defaults, standard.dbName);
+    await defaults.shutdown('test', 0);
   }, 60_000);
 
   it('refuses to start when the indexes cannot be created, and never listens (TD-31)', async () => {

@@ -150,3 +150,10 @@
 ### TD-33 · Runtime module separate from the entry point — Accepted (2026-11-18, review M10/M9)
 
 - **Decision**: `src/runtime.ts` owns the startup order, the leader hooks (scheduler starts before the dispatcher; a failed start makes the lease release itself and retry, review H3) and shutdown; `server.ts` only creates the real clients, handles signals and exits. Shutdown releases the lease in parallel with draining HTTP; the hard exit is `SHUTDOWN_TIMEOUT_MS + send deadline + 5 s`.
+
+### TD-35 · Product name from `APP_NAME` (visible text only) — Accepted (2026-11-19)
+
+- **Context**: "payMonitor" was hard-coded in the UI, email subjects/footers and messages, so renaming the product meant a code change.
+- **Decision** (user): one env variable `APP_NAME` (default `payMonitor`, 1–40 characters, no control characters so it cannot split an email header) read only in `src/config`. It drives what people see: page title and brand (`res.locals.appName`, printed with `<%= %>`), the email subject prefix `[<APP_NAME>] <TYPE> – <monitor>` (FR-A6, no separate prefix variable), both email footers and the body wording (`EmailContext.appName`, HTML-escaped), the no-index warning (service dependency) and the startup log message. The log `event` names do not change.
+- **Not changed on purpose**: MongoDB `appName` connection labels, the log `service` field, the default DB name `paymonitor` (a rename would point at an empty database; `MONGO_DB_NAME` exists for that), the `window.payMonitorApi` browser global, the bcrypt timing constant, the `pm.sid` cookie, code comments and docs.
+- **Consequences**: with `APP_NAME` unset every output is identical to before. Alerts already stored keep the old name because subject and body are rendered and stored at creation (FR-A1), including on Resend. Mail filters on the old subject prefix stop matching after a rename. The sender display name stays in `MAIL_FROM` and must be changed together with `APP_NAME`.

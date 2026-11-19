@@ -39,10 +39,10 @@ export function buildWebhookStale(input: WebhookStaleInput, ctx: EmailContext): 
     { label: 'Checked at', value: formatUtc(input.checkedAt, ctx.timeZone) },
     ...(reminder ? reminderRows(reminder) : []),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: reminder ? `Reminder #${reminder.number}: no new webhook documents` : 'No new webhook documents',
     rows,
     links: [{ label: 'Open the monitor', url: monitorUrl(ctx, monitor) }],
   });
-  return { subject: subjectLine('WEBHOOK_STALE', monitor.name), text, html };
+  return { subject: subjectLine(ctx, 'WEBHOOK_STALE', monitor.name), text, html };
 }

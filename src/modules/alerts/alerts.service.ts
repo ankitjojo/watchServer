@@ -53,7 +53,7 @@ export interface AlertsServiceDeps {
   logger: Logger;
   /** Wakes the dispatcher so a new alert goes out at once instead of at the next poll. */
   nudge: () => void;
-  settings: { sourceErrorGroupWindowMs: number; dashboardBaseUrl: string; timeZone: string };
+  settings: { sourceErrorGroupWindowMs: number; dashboardBaseUrl: string; timeZone: string; appName: string };
   uuid?: () => string;
 }
 
@@ -101,7 +101,11 @@ function currentState(check: Check): string | undefined {
 export function createAlertsService(deps: AlertsServiceDeps): AlertsService {
   const { repo, incidents, recipients, audit, clock, logger, nudge, settings } = deps;
   const newUuid = deps.uuid ?? randomUUID;
-  const ctx: EmailContext = { dashboardBaseUrl: settings.dashboardBaseUrl, timeZone: settings.timeZone };
+  const ctx: EmailContext = {
+    dashboardBaseUrl: settings.dashboardBaseUrl,
+    timeZone: settings.timeZone,
+    appName: settings.appName,
+  };
 
   /**
    * Store first (FR-A1): the alert row exists, with its rendered email, before anything is sent.

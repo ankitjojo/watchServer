@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { boundedString } from '../utils/validation.js';
 
 const intRange = (min: number, max: number): z.ZodType<number> => z.coerce.number().int().min(min).max(max);
 
@@ -39,6 +40,9 @@ export const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: intRange(1, 65535).default(3000),
     TRUST_PROXY: intRange(0, 10).default(0),
+    // The name people see in the UI, emails and log messages (plan app-name-from-env). Technical ids stay fixed.
+    // 1-40 characters, trimmed, no control characters: it lands in email subjects, so a line break must never get in.
+    APP_NAME: boundedString(1, 40).default('payMonitor'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
     MONGO_URI: mongoUri,

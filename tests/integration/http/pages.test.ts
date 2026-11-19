@@ -264,3 +264,31 @@ describe('global alert log (FR-D5)', () => {
     expect((await t.anonymous().get('/alerts')).status).toBe(302);
   });
 });
+
+describe('product name from APP_NAME (plan app-name-from-env)', () => {
+  const brand = (html: string): string => /<a class="brand" href="\/">([^<]*)<\/a>/.exec(html)?.[1] ?? '';
+  const title = (html: string): string => /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '';
+
+  it('shows payMonitor by default (nothing changes unless the variable is set)', async () => {
+    const res = await (await t.loginAs(VIEWER)).get('/');
+    expect(brand(res.text)).toBe('payMonitor');
+    expect(title(res.text)).toBe('Overview · payMonitor');
+  });
+
+  it('shows the configured name in the tab title and the brand, on every kind of page', async () => {
+    const custom = await startTestApp({ mongo, config: { APP_NAME: 'Acme <Watch>' } });
+    const admin = await custom.loginAs(ADMIN);
+    const overview = await admin.get('/');
+    expect(title(overview.text)).toBe('Overview · Acme &lt;Watch&gt;');
+    expect(brand(overview.text)).toBe('Acme &lt;Watch&gt;');
+    const login = await custom.anonymous().get('/login');
+    expect(title(login.text)).toBe('Sign in · Acme &lt;Watch&gt;');
+    const missing = await admin.get('/no-such-page');
+    expect(missing.status).toBe(404);
+    expect(title(missing.text)).toContain('Acme &lt;Watch&gt;');
+    // Escaped: the raw tag never reaches the page, and no visible old name is left.
+    expect(overview.text).not.toContain('<Watch>');
+    expect(overview.text).not.toMatch(/>\s*payMonitor\s*</);
+    await custom.stop();
+  });
+});

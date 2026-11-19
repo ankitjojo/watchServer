@@ -10,7 +10,7 @@ export interface TestEmailInput {
 
 /** FR-D3: a sample alert so admins can check the whole path to the recipients. */
 export function buildTestEmail(input: TestEmailInput, ctx: EmailContext): BuiltEmail {
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: 'Test email',
     intro: 'This is a test alert. Nothing is wrong.',
     rows: [
@@ -20,5 +20,5 @@ export function buildTestEmail(input: TestEmailInput, ctx: EmailContext): BuiltE
     ],
     links: [{ label: 'Open the monitor', url: monitorUrl(ctx, input.monitor) }],
   });
-  return { subject: subjectLine('TEST', input.monitor.name), text, html };
+  return { subject: subjectLine(ctx, 'TEST', input.monitor.name), text, html };
 }

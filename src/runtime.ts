@@ -185,7 +185,7 @@ export async function startRuntime(deps: RuntimeDeps): Promise<Runtime> {
   });
 
   const http = await (deps.listen ?? defaultListen(config.http.port))(app);
-  logger.info({ event: 'app.started', port: config.http.port, env: config.env }, 'payMonitor started');
+  logger.info({ event: 'app.started', port: config.http.port, env: config.env }, `${config.appName} started`);
   // Listening first, so /healthz answers while the lease is being acquired.
   lease.start();
 

@@ -51,6 +51,8 @@ A step-by-step manual test for every acceptance criterion: [runbook](docs/implem
 
 On first start the first admin and the first master recipient are created from `SEED_ADMIN_*` and `MASTER_ALERT_*`.
 
+**Renaming the product:** set `APP_NAME` (default `payMonitor`) and restart. It changes everything people see (page title, brand, email subject prefix `[APP_NAME]`, email footer). Also change the display name in `MAIL_FROM`. Emails already stored keep the old name, and mail filters on the old subject prefix need updating.
+
 **The source database user must have the `read` role only.** payMonitor only ever calls `find` (on `_id` and the timestamp field), `listCollections` and `indexes` (plus `ping` for `/readyz`). Add a descending index on each monitored timestamp field; payMonitor warns when one is missing but cannot create it.
 
 ## Scripts

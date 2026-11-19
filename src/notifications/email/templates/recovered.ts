@@ -21,12 +21,12 @@ export function buildRecovered(input: RecoveredInput, ctx: EmailContext): BuiltE
     { label: 'Downtime', value: formatHumanDuration(input.downtimeMs) },
     ...(input.currentState ? [{ label: 'Now', value: input.currentState }] : []),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: 'Recovered',
     rows,
     links: [{ label: 'Open the monitor', url: monitorUrl(ctx, monitor) }],
   });
-  return { subject: subjectLine('RECOVERED', monitor.name), text, html };
+  return { subject: subjectLine(ctx, 'RECOVERED', monitor.name), text, html };
 }
 
 export interface RecoveredSourceInput {
@@ -45,10 +45,10 @@ export function buildRecoveredSource(input: RecoveredSourceInput, ctx: EmailCont
     { label: 'Affected monitors', value: String(input.affected.length) },
     ...input.affected.map((m) => ({ label: '•', value: m.name })),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: 'The source database is reachable again',
     rows,
     links: input.affected.map((m) => ({ label: `Open ${m.name}`, url: monitorUrl(ctx, m) })),
   });
-  return { subject: subjectLine('RECOVERED', 'Source DB'), text, html };
+  return { subject: subjectLine(ctx, 'RECOVERED', 'Source DB'), text, html };
 }

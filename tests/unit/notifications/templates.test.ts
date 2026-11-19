@@ -5,7 +5,11 @@ import {
   type EmailMonitor,
 } from '../../../src/notifications/email/templates/index.js';
 
-const ctx: EmailContext = { dashboardBaseUrl: 'https://monitor.example.com', timeZone: 'UTC' };
+const ctx: EmailContext = {
+  dashboardBaseUrl: 'https://monitor.example.com',
+  timeZone: 'UTC',
+  appName: 'payMonitor',
+};
 const MIN = 60_000;
 const HOUR = 3_600_000;
 const checkedAt = new Date('2026-11-18T14:05:09Z');
@@ -224,6 +228,62 @@ describe("a monitor's own MONITOR_ERROR (TD-29)", () => {
   });
   it('labels reminders', () => {
     expect(build({ ...own, reminder: { number: 2, openForMs: HOUR } }).text).toContain('Reminder #2');
+  });
+});
+
+describe('product name from APP_NAME (plan app-name-from-env)', () => {
+  const acme: EmailContext = { ...ctx, appName: 'Acme <Watch>' };
+  const specs: [string, AlertEmailSpec][] = [
+    ['WEBHOOK_STALE', stale],
+    ['WEBHOOK_NO_DATA', { type: 'WEBHOOK_NO_DATA', monitor: webhook, reason: 'EMPTY_COLLECTION', checkedAt }],
+    ['ENDPOINT_DOWN', { type: 'ENDPOINT_DOWN', monitor: endpoint, attempts: [], checkedAt }],
+    [
+      'RECOVERED',
+      { type: 'RECOVERED', monitor: webhook, openedAt: checkedAt, recoveredAt: checkedAt, downtimeMs: HOUR },
+    ],
+    [
+      'RECOVERED_SOURCE',
+      {
+        type: 'RECOVERED_SOURCE',
+        openedAt: checkedAt,
+        recoveredAt: checkedAt,
+        downtimeMs: HOUR,
+        affected: [],
+      },
+    ],
+    [
+      'MONITOR_ERROR',
+      { type: 'MONITOR_ERROR', firstErrorAt: checkedAt, errorCode: 'X', errorMessage: 'y', affected: [] },
+    ],
+    [
+      'MONITOR_CHECK_ERROR',
+      { type: 'MONITOR_CHECK_ERROR', monitor: webhook, errorCode: 'X', errorMessage: 'y', checkedAt },
+    ],
+    ['TEST', { type: 'TEST', monitor: webhook, requestedBy: 'a@x.test', at: checkedAt }],
+  ];
+
+  it.each(specs)(
+    '%s: subject prefix and both footers use the configured name, escaped in HTML',
+    (_name, spec) => {
+      const mail = buildAlertEmail(spec, acme);
+      expect(mail.subject.startsWith('[Acme <Watch>] ')).toBe(true);
+      expect(mail.text).toContain('-- Sent by Acme <Watch>');
+      expect(mail.html).toContain('Sent by Acme &lt;Watch&gt;');
+      expect(mail.html).not.toContain('<Watch>');
+    },
+  );
+
+  it.each(specs)('%s: keeps no old name when renamed', (_name, spec) => {
+    const mail = buildAlertEmail(spec, { ...ctx, appName: 'Acme' });
+    expect(`${mail.subject}\n${mail.text}\n${mail.html}`).not.toContain('payMonitor');
+  });
+
+  it('the per-monitor error email says the configured name cannot tell what is arriving', () => {
+    const mail = buildAlertEmail(
+      { type: 'MONITOR_CHECK_ERROR', monitor: webhook, errorCode: 'X', errorMessage: 'y', checkedAt },
+      { ...ctx, appName: 'Acme' },
+    );
+    expect(mail.text).toContain('so Acme cannot tell whether webhooks are arriving');
   });
 });
 

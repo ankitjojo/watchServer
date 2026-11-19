@@ -3,6 +3,8 @@ export interface EmailContext {
   /** No trailing slash. */
   dashboardBaseUrl: string;
   timeZone: string;
+  /** The product name people see (APP_NAME): subject prefix, footers and wording. */
+  appName: string;
 }
 
 export interface BuiltEmail {

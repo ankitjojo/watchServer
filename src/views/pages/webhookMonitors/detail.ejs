@@ -14,7 +14,7 @@
 
 <% if (monitor.hasIndexWarning) { %>
 <div class="flash flash-warning" role="status">
-  No index starts with <strong><%= monitor.timestampKey %></strong> on <strong><%= monitor.collection %></strong> (checked when saved), so every check scans the collection. Ask the source backend owners to add one; payMonitor cannot create it.
+  No index starts with <strong><%= monitor.timestampKey %></strong> on <strong><%= monitor.collection %></strong> (checked when saved), so every check scans the collection. Ask the source backend owners to add one; <%= appName %> cannot create it.
 </div>
 <% } %>
 

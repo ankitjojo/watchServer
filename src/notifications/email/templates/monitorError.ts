@@ -17,7 +17,7 @@ export function buildMonitorError(input: MonitorErrorInput, ctx: EmailContext): 
     { label: 'Affected monitors', value: String(input.affected.length) },
     ...input.affected.map((m) => ({ label: '•', value: m.name })),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: 'The source database could not be read',
     intro:
       'Webhook monitors cannot tell whether payments are flowing while the source database is unreachable. Their status is left unchanged until it answers again.',
@@ -25,7 +25,7 @@ export function buildMonitorError(input: MonitorErrorInput, ctx: EmailContext): 
     links: input.affected.map((m) => ({ label: `Open ${m.name}`, url: monitorUrl(ctx, m) })),
   });
   return {
-    subject: subjectLine('MONITOR_ERROR', `Source DB (${input.affected.length} monitors)`),
+    subject: subjectLine(ctx, 'MONITOR_ERROR', `Source DB (${input.affected.length} monitors)`),
     text,
     html,
   };

@@ -88,6 +88,22 @@ describe('loadConfig', () => {
     ).toBe(30_001);
   });
 
+  it('APP_NAME: defaults to payMonitor and accepts a custom product name', () => {
+    expect(loadConfig(base).appName).toBe('payMonitor');
+    expect(loadConfig({ ...base, APP_NAME: '  Acme Watch ' }).appName).toBe('Acme Watch');
+  });
+
+  it.each([
+    ['blank after trimming', '   '],
+    ['longer than 40 characters', 'x'.repeat(41)],
+    ['containing a line break', 'Acme\nWatch'],
+    ['containing a control character', 'Acme\u0007Watch'],
+  ])('APP_NAME: rejects a value %s, naming the variable but never the value', (_label, value) => {
+    const issues = issuesFor({ ...base, APP_NAME: value });
+    expect(issues.map((i) => i.variable)).toContain('APP_NAME');
+    expect(JSON.stringify(issues)).not.toContain(value.trim() || 'never-matches');
+  });
+
   it('treats empty values as unset', () => {
     expect(loadConfig({ ...base, ENDPOINT_TIMEOUT_MS: '' }).endpoint.timeoutMs).toBe(10000);
   });

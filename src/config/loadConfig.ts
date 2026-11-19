@@ -16,6 +16,8 @@ export interface RateLimitConfig {
 
 export interface Config {
   env: Env['NODE_ENV'];
+  /** Product name shown to people (UI, emails, log messages). Default `payMonitor`. */
+  appName: string;
   http: { port: number; trustProxyHops: number };
   log: { level: Env['LOG_LEVEL'] };
   monitorDb: { uri: string; name: string };
@@ -108,6 +110,7 @@ export function loadConfig(source: NodeJS.ProcessEnv): Config {
 
   const config: Config = {
     env: e.NODE_ENV,
+    appName: e.APP_NAME,
     http: { port: e.PORT, trustProxyHops: e.TRUST_PROXY },
     log: { level: e.LOG_LEVEL },
     monitorDb: { uri: e.MONGO_URI, name: e.MONGO_DB_NAME },

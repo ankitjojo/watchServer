@@ -41,13 +41,15 @@ export interface WebhookMonitorsServiceDeps {
   incidents: MonitorIncidentsPort;
   clock: Clock;
   daysPerMonth: number;
+  /** The product name shown in warnings (APP_NAME). */
+  appName: string;
 }
 
 const fieldError = (field: string, message: string): ValidationError =>
   new ValidationError(message, { details: { field } });
 
 export function createWebhookMonitorsService(deps: WebhookMonitorsServiceDeps): WebhookMonitorsService {
-  const { repo, sourceData, audit, scheduler, incidents, clock, daysPerMonth } = deps;
+  const { repo, sourceData, audit, scheduler, incidents, clock, daysPerMonth, appName } = deps;
 
   async function load(id: string): Promise<WebhookMonitor> {
     const monitor = await repo.findById(id);
@@ -75,7 +77,7 @@ export function createWebhookMonitorsService(deps: WebhookMonitorsServiceDeps): 
     }
     if (!inspection.hasIndex) {
       warnings.push(
-        `No index starts with "${input.timestampKey}" on ${input.sourceCollection}: every check will scan the collection. Ask the source backend owners to add { ${input.timestampKey}: -1 }; payMonitor cannot create it.`,
+        `No index starts with "${input.timestampKey}" on ${input.sourceCollection}: every check will scan the collection. Ask the source backend owners to add { ${input.timestampKey}: -1 }; ${appName} cannot create it.`,
       );
     }
     return { hasIndex: inspection.hasIndex, warnings };

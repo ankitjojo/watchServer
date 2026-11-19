@@ -29,10 +29,10 @@ export function buildEndpointDown(input: EndpointDownInput, ctx: EmailContext): 
     ...attempts.map((a) => ({ label: `Attempt ${a.attempt}`, value: describe(a) })),
     ...(reminder ? reminderRows(reminder) : []),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: reminder ? `Reminder #${reminder.number}: endpoint is down` : 'Endpoint is down',
     rows,
     links: [{ label: 'Open the monitor', url: monitorUrl(ctx, monitor) }],
   });
-  return { subject: subjectLine('ENDPOINT_DOWN', monitor.name), text, html };
+  return { subject: subjectLine(ctx, 'ENDPOINT_DOWN', monitor.name), text, html };
 }

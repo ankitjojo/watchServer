@@ -29,14 +29,13 @@ export function buildMonitorCheckError(input: MonitorCheckErrorInput, ctx: Email
     { label: 'Checked at', value: formatUtc(input.checkedAt, ctx.timeZone) },
     ...(reminder ? reminderRows(reminder) : []),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: reminder
       ? `Reminder #${reminder.number}: the monitor cannot read its collection`
       : 'The monitor cannot read its collection',
-    intro:
-      'The source database answered, but this collection could not be read, so payMonitor cannot tell whether webhooks are arriving for this gateway.',
+    intro: `The source database answered, but this collection could not be read, so ${ctx.appName} cannot tell whether webhooks are arriving for this gateway.`,
     rows,
     links: [{ label: 'Open the monitor', url: monitorUrl(ctx, monitor) }],
   });
-  return { subject: subjectLine('MONITOR_ERROR', monitor.name), text, html };
+  return { subject: subjectLine(ctx, 'MONITOR_ERROR', monitor.name), text, html };
 }

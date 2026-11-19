@@ -34,10 +34,10 @@ export function buildWebhookNoData(input: WebhookNoDataInput, ctx: EmailContext)
     { label: 'Checked at', value: formatUtc(input.checkedAt, ctx.timeZone) },
     ...(reminder ? reminderRows(reminder) : []),
   ];
-  const { text, html } = renderEmail({
+  const { text, html } = renderEmail(ctx, {
     heading: reminder ? `Reminder #${reminder.number}: no usable webhook data` : 'No usable webhook data',
     rows,
     links: [{ label: 'Open the monitor', url: monitorUrl(ctx, monitor) }],
   });
-  return { subject: subjectLine('WEBHOOK_NO_DATA', monitor.name), text, html };
+  return { subject: subjectLine(ctx, 'WEBHOOK_NO_DATA', monitor.name), text, html };
 }
