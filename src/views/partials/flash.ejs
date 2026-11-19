@@ -1,0 +1,3 @@
+<% (locals.flash || []).forEach(function (message) { %>
+<div class="flash flash-<%= message.type %>" role="status"><%= message.text %></div>
+<% }) %>

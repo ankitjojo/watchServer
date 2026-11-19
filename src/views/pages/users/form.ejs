@@ -1,0 +1,33 @@
+<h1><%= mode === 'create' ? 'New user' : 'Edit user' %></h1>
+<% if (errors._form) { %><div class="flash flash-error" role="alert"><%= errors._form %></div><% } %>
+<form method="post" action="<%= mode === 'create' ? '/users/new' : '/users/' + id + '/edit' %>" class="card" novalidate>
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+
+  <label for="name">Name</label>
+  <input id="name" name="name" type="text" maxlength="100" required value="<%= values.name || '' %>" />
+  <%- include('../../partials/fieldError', { field: 'name' }) %>
+
+  <label for="email">Email</label>
+  <input id="email" name="email" type="email" maxlength="254" required value="<%= values.email || '' %>" />
+  <%- include('../../partials/fieldError', { field: 'email' }) %>
+
+  <label for="role">Role</label>
+  <select id="role" name="role">
+    <% roles.forEach(function (r) { %>
+    <option value="<%= r %>" <%= values.role === r ? 'selected' : '' %>><%= r %></option>
+    <% }) %>
+  </select>
+  <%- include('../../partials/fieldError', { field: 'role' }) %>
+
+  <label for="password">Password<%= mode === 'edit' ? ' (leave blank to keep the current one)' : '' %></label>
+  <input id="password" name="password" type="password" autocomplete="new-password" <%= mode === 'create' ? 'required' : '' %> />
+  <small class="muted">At least 12 characters, at most 72 bytes.</small>
+  <%- include('../../partials/fieldError', { field: 'password' }) %>
+
+  <label class="checkbox"><input type="checkbox" name="isActive" value="on" <%= values.isActive ? 'checked' : '' %> /> Active (inactive users cannot sign in)</label>
+
+  <div class="form-actions">
+    <button type="submit">Save</button>
+    <a href="/users">Cancel</a>
+  </div>
+</form>

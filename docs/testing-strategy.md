@@ -1,6 +1,6 @@
 # payMonitor — Testing Strategy & Quality Gates
 
-> Status: **Proposed** — no test setup exists yet (no `package.json`). Framework: **Jest** (user decision, TD-10). Rules for Claude: `.claude/rules/testing.md`.
+> Status: **Implemented** (v1). Framework: **Jest** (user decision, TD-10). Rules for Claude: `.claude/rules/testing.md`.
 
 ---
 
@@ -14,6 +14,8 @@
 | Integration (HTTP) | `tests/integration/http/**` | `supertest` against `createApp(deps)` | Auth, RBAC, CSRF, validation errors, response envelope, page renders |
 | Probe | `tests/integration/probe/**` | Local `http.createServer` | 200 / 500 / timeout / redirect loop / max redirects / connection refused |
 | Manual | checklist in PR | Browser + Mailtrap-like SMTP sandbox | Visual layout, email rendering, charts |
+
+**Jest projects** (`jest.config.js`): `unit`, `integration`, `acceptance`. `npm test` runs unit + integration; `npm run test:acceptance` runs `tests/acceptance/*` (one file per requirements §9 criterion, run in band). Integration and acceptance share a `setupFilesAfterEnv` that sets a 120 s timeout (starting and stopping `mongod` can take several seconds under load; a project-level `testTimeout` is not honoured by Jest). Run one file with `NODE_OPTIONS=--experimental-vm-modules npx jest <path>`; `npm test -- <path>` does not filter (the script passes `--selectProjects`).
 
 ## 2. Risk-based coverage (instead of a % target)
 
@@ -47,7 +49,7 @@ Lower priority: simple CRUD happy paths (one per module), EJS render smoke tests
 ## 4. Jest configuration notes (ESM)
 
 ```js
-// jest.config.js (Proposed)
+// jest.config.js (see the real file: three projects, unit / integration / acceptance)
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
@@ -75,7 +77,9 @@ Run in this order; report each command and its actual result. **Never claim a ga
 
 Until `package.json` exists, these gates cannot run — say so explicitly instead of skipping silently.
 
-## 6. Proposed dependencies (NOT installed — require approval)
+## 6. Dependencies (installed with the user's approval on 2026-11-18; versions are in `package-lock.json`)
+
+Major versions in use: Express 5, MongoDB driver 7, Zod 4, Jest 30 with ts-jest 29, TypeScript 6, ESLint 10, Nodemailer, bcrypt 6, Chart.js 4. Adding or upgrading a package still needs a stated purpose and approval.
 
 | Package | Kind | Purpose | Already covered? |
 |---------|------|---------|------------------|

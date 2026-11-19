@@ -1,0 +1,38 @@
+<div class="page-head">
+  <h1>Webhook monitors</h1>
+  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %><a class="button" href="/webhook-monitors/new">New webhook monitor</a><% } %>
+</div>
+<p class="muted">Each monitor watches one source collection and alerts when no new document arrives within the threshold.</p>
+<% if (rows.length === 0) { %>
+  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %>
+<%- include('../../partials/emptyState', { message: 'No webhook monitors yet.', actionHref: '/webhook-monitors/new', actionLabel: 'Create the first one' }) %>
+  <% } else { %>
+<%- include('../../partials/emptyState', { message: 'No webhook monitors have been set up yet. An admin can create them.' }) %>
+  <% } %>
+<% } else { %>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Name</th><th scope="col">Gateway</th><th scope="col">Collection</th><th scope="col">Status</th>
+        <th scope="col">Check</th><th scope="col">Threshold</th><th scope="col">Last check</th><th scope="col">Next check</th><th scope="col">Last doc age</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function (m) { %>
+      <tr>
+        <td><a href="/webhook-monitors/<%= m.id %>"><%= m.name %></a></td>
+        <td><%= m.gatewayName %></td>
+        <td><%= m.collection %></td>
+        <td><%- include('../../partials/statusBadge', { status: m.status, label: m.statusLabel }) %></td>
+        <td><%= m.checkEvery %></td>
+        <td><%= m.threshold %></td>
+        <td><%= m.lastCheck %></td>
+        <td><%= m.nextCheck %></td>
+        <td><%= m.lastAge %></td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>

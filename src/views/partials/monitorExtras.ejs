@@ -1,0 +1,77 @@
+<section class="card" id="chart-section">
+  <h2><%= extras.chart.type === 'webhook' ? 'Document age' : 'Response time and availability' %></h2>
+  <div class="row range-picker" id="chart-controls">
+    <button type="button" data-range="24h">24 h</button>
+    <button type="button" data-range="7d">7 d</button>
+    <button type="button" data-range="30d">30 d</button>
+    <label class="inline-label">From <input type="date" id="chart-from" /></label>
+    <label class="inline-label">To <input type="date" id="chart-to" /></label>
+    <button type="button" data-range="custom">Custom range</button>
+  </div>
+  <%# The chart settings travel in an attribute: attributes are decoded by the browser, script text is not. %>
+  <div id="chart-root" data-config="<%= JSON.stringify(extras.chart) %>">
+    <canvas id="chart" role="img" aria-label="Chart of recent checks (times in UTC)"></canvas>
+  </div>
+  <output id="chart-status" class="muted" aria-live="polite"></output>
+</section>
+
+<section class="card">
+  <h2>History</h2>
+  <form method="get" class="filters">
+    <label>Result
+      <select name="result">
+        <option value="">All</option>
+        <% ['OK','STALE','NO_DATA','DOWN','ERROR'].forEach(function (r) { %>
+        <option value="<%= r %>" <%= extras.history.filters.result === r ? 'selected' : '' %>><%= r.replace('_', ' ') %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>From (UTC) <input type="date" name="from" value="<%= extras.history.filters.from %>" /></label>
+    <label>To (UTC) <input type="date" name="to" value="<%= extras.history.filters.to %>" /></label>
+    <button type="submit">Filter</button>
+    <a href="?">Clear</a>
+  </form>
+  <% if (extras.history.rows.length === 0) { %>
+  <p class="muted">No checks match.</p>
+  <% } else { %>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Started</th><th scope="col">Result</th><th scope="col">Trigger</th><th scope="col">Details</th></tr></thead>
+      <tbody>
+        <% extras.history.rows.forEach(function (c) { %>
+        <tr>
+          <td><%= c.started %></td>
+          <td><%- include('./statusBadge', { status: c.result, label: c.result.replace('_', ' ') }) %></td>
+          <td><%= c.trigger %></td>
+          <td><%= c.detail %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('./pagination', { olderHref: extras.history.olderHref }) %>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2>Incidents</h2>
+  <% if (extras.incidents.length === 0) { %>
+  <p class="muted">No incidents.</p>
+  <% } else { %>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Started</th><th scope="col">Ended</th><th scope="col">Duration</th><th scope="col">Note</th></tr></thead>
+      <tbody>
+        <% extras.incidents.forEach(function (i) { %>
+        <tr><td><%= i.opened %></td><td><%= i.closed %></td><td><%= i.duration %></td><td><%= i.note %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2>Alerts and emails</h2>
+  <%- include('./alertsTable', { rows: extras.alerts, showMonitor: false, emptyText: 'No alerts for this monitor yet.' }) %>
+</section>

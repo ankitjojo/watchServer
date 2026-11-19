@@ -1,0 +1,34 @@
+<% if (rows.length === 0) { %>
+<p class="muted"><%= locals.emptyText || 'No alerts yet.' %></p>
+<% } else { %>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Created</th><th scope="col">Type</th>
+        <% if (locals.showMonitor) { %><th scope="col">Monitor</th><% } %>
+        <th scope="col">Email status</th><th scope="col">Recipients</th><th scope="col">Sent</th><th scope="col">Error</th><th scope="col"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function (a) { %>
+      <tr class="<%= a.isFailed ? 'row-failed' : '' %>">
+        <td><%= a.created %></td>
+        <td><%= a.type %></td>
+        <% if (locals.showMonitor) { %><td><%= a.monitor %></td><% } %>
+        <td><%- include('./statusBadge', { status: a.status, label: a.statusLabel }) %></td>
+        <td title="<%= a.recipients %>"><%= a.recipientCount %></td>
+        <td><%= a.sent %></td>
+        <td><%= a.error %></td>
+        <td>
+          <% if (a.canResend) { %>
+          <button type="button" class="link" data-resend="<%= a.id %>">Resend</button>
+          <output class="muted" data-resend-result="<%= a.id %>" aria-live="polite"></output>
+          <% } %>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>

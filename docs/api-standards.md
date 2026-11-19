@@ -1,6 +1,6 @@
 # payMonitor — API & HTTP Standards
 
-> Status: **Proposed**. Rules for Claude: `.claude/rules/api-development.md`. Security controls: [security.md](security.md).
+> Status: **Implemented** (v1). Rules for Claude: `.claude/rules/api-development.md`. Security controls: [security.md](security.md).
 
 payMonitor has **two HTTP surfaces**, both served by the same Express app and protected by the same session:
 
@@ -33,6 +33,13 @@ Role column: `A` = admin only, `V` = admin or viewer.
 
 HTML forms only support GET/POST, so page mutations use `POST /<resource>/:id/<action>`.
 
+Query parameters on pages (all whitelisted with `.strict()`, malformed values answer 400):
+- `GET /webhook-monitors/:id` and `/endpoint-monitors/:id`: `result` (`OK|STALE|NO_DATA|DOWN|ERROR`), `from`, `to` (plain `YYYY-MM-DD`, UTC), `cursor`. They filter the history table; "Older" links carry the cursor.
+- `GET /alerts` (FR-D5): `monitorId`, `type`, `status`, `from`, `to` (plain days, UTC), `cursor`. Page size 50.
+- Users and recipients: no query parameters. Resending is the JSON call `POST /api/v1/alerts/:id/resend` (202 "queued"), made by `alertActions.js`.
+
+Chart data is read by `charts.js` from `GET /api/v1/monitors/:type/:id/series` (`range=24h|7d|30d|custom`, custom needs `from`/`to` ISO datetimes, at most 90 days, at most 500 points). The chart settings reach the browser in a `data-config` attribute, not an inline script (CSP; entities inside `<script>` text are not decoded).
+
 ### JSON API (`/api/v1`)
 | Method | Path | Role | Purpose |
 |--------|------|------|---------|
@@ -46,6 +53,8 @@ HTML forms only support GET/POST, so page mutations use `POST /<resource>/:id/<a
 | POST | `/alerts/:id/resend` | A | FR-A2 |
 
 `:type` ∈ `webhook | endpoint` (validated with `z.enum`).
+
+The `/monitors/:type/:id/*` routes are owned by one small module, `modules/monitors` (run, pause, resume, test email, history, series), so the webhook and endpoint modules do not repeat them. Run-now and test-email are rate limited per user (`ACTION_RATE_LIMIT`). Run-now answers `409 ALREADY_RUNNING` while the monitor is being checked and `409 SCHEDULER_STANDBY` on an instance that does not hold the scheduler lease. Run-now also works on a paused monitor (D14).
 
 ## 2. Response contract (JSON API)
 
@@ -76,7 +85,7 @@ HTML forms only support GET/POST, so page mutations use `POST /<resource>/:id/<a
 
 ## 3. Validation
 
-- Every route has a Zod schema for `params`, `query`, `body` in `<module>.schemas.ts`. A shared `validate({ params, query, body })` middleware parses and attaches typed values to `res.locals.input` (no mutation of `req.query` — Express 5 makes it a getter).
+- Every route has a Zod schema for `params`, `query`, `body` in `<module>.schemas.ts`. Each route group defines `const v = defineValidation({ params, query, body })` (`src/middlewares/validate.ts`): routes use `v.handler('api' | 'form')`, controllers read typed input with `v.read(res)` and, for forms, `v.formFailure(res)`. Parsed values live on `res.locals.validated` (no mutation of `req.query` — Express 5 makes it a getter). `_csrf` is stripped from bodies before `.strict()` parsing.
 - Request and response bodies, form field names and query params are **camelCase** (`name`, `threshold.value`, `alertMode`). Never expose stored prefixed names (`sName`) or raw documents through the API or views; return mapped domain/DTO objects (TD-16). `_id` is exposed as `id` (string).
 - Coerce numbers from form strings explicitly (`z.coerce.number().int().positive()`), bound every number and string (`max()`), trim strings, lower-case emails.
 - Cross-field rules in `.superRefine` (e.g. `repeatInterval` required iff `alertMode === 'REPEAT_EVERY'` and `repeatInterval` in ms ≥ `checkInterval` in ms).

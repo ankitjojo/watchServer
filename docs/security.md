@@ -1,6 +1,6 @@
 # payMonitor — Security
 
-> Status: **Proposed** controls for an app not yet written. Rules for Claude: `.claude/rules/security.md`.
+> Status: **Implemented** (v1). Where each control lives in the code and which test proves it: `docs/implementation_plans/paymonitor-v1-implementation.md` Appendix J. Rules for Claude: `.claude/rules/security.md`.
 > Threat focus: an internal admin tool that (1) holds read access to the **payment** database, (2) makes outbound HTTP requests to admin-supplied URLs, (3) sends email to a managed list.
 
 ---
@@ -53,7 +53,7 @@ EJS `<%=` everywhere for dynamic values (monitor names, gateway names, URLs, err
 
 ### 2.9 SSRF (endpoint monitors)
 - Allowed schemes: `http`, `https`. Reject credentials in URL (`user:pass@`).
-- Block link-local/metadata ranges after DNS resolution on every attempt (`169.254.0.0/16`, `fd00:ec2::254`, `100.100.100.200`), including on redirects (manual redirect loop, TD-12).
+- Block link-local/metadata ranges after DNS resolution on every attempt (`169.254.0.0/16`, `fd00:ec2::254`, `100.100.100.200`, `fe80::/10`), including on redirects (manual redirect loop, TD-12). Matching uses `net.BlockList`, so IPv4-mapped IPv6 spellings (`::ffff:a9fe:a9fe`) are blocked too. The probe uses `node:http(s)` with a vetting `lookup` hook: the addresses checked are the addresses the socket connects to, so DNS rebinding cannot bypass the check (review M3).
 - Private/loopback ranges **allowed** by default because monitoring internal servers is a requirement (open question A3); creation is admin-only and audited.
 - Never return the response body to the UI or email — only status code, timing, error class.
 

@@ -16,3 +16,6 @@ coverage/
 
 # Claude Code personal settings (team rules in .claude/rules/ ARE committed)
 .claude/settings.local.json
+
+# Local sandbox data (memory MongoDB files, outbox emails)
+.sandbox/

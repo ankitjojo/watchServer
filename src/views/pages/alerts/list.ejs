@@ -1,0 +1,30 @@
+<h1>Alerts</h1>
+<p class="muted">Every alert is stored before its email is sent. Failed emails are highlighted; admins can resend them.</p>
+
+<form method="get" class="filters card">
+  <label>Monitor
+    <select name="monitorId">
+      <option value="">All</option>
+      <% options.monitors.forEach(function (m) { %><option value="<%= m.id %>" <%= filters.monitorId === m.id ? 'selected' : '' %>><%= m.name %></option><% }) %>
+    </select>
+  </label>
+  <label>Type
+    <select name="type">
+      <option value="">All</option>
+      <% options.types.forEach(function (t) { %><option value="<%= t %>" <%= filters.type === t ? 'selected' : '' %>><%= t %></option><% }) %>
+    </select>
+  </label>
+  <label>Email status
+    <select name="status">
+      <option value="">All</option>
+      <% options.statuses.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }) %>
+    </select>
+  </label>
+  <label>From (UTC) <input type="date" name="from" value="<%= filters.from %>" /></label>
+  <label>To (UTC) <input type="date" name="to" value="<%= filters.to %>" /></label>
+  <button type="submit">Filter</button>
+  <a href="/alerts">Clear</a>
+</form>
+
+<%- include('../../partials/alertsTable', { rows: rows, showMonitor: true, emptyText: 'No alerts match.' }) %>
+<%- include('../../partials/pagination', { olderHref: locals.olderHref }) %>

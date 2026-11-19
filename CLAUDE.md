@@ -6,7 +6,7 @@ payMonitor watches the JOJO Subscription Backend 2.0 from outside: it **reads** 
 Requirement IDs (FR-W1, FR-A4a, …) are referenced throughout the code and docs.
 
 ## Status
-Foundation docs exist; **no application code yet**. Stack decided: Node 22 + TypeScript (strict, ESM/nodenext), Express 5, EJS, native MongoDB driver, Nodemailer, Zod, Pino, Jest. Dependencies are proposed in `docs/testing-strategy.md` §6 and **not installed** until the user approves.
+v1 is **implemented** (all 13 acceptance criteria are covered by `tests/acceptance/`). Stack: Node 22 + TypeScript (strict, ESM/nodenext), Express 5, EJS, native MongoDB driver, Nodemailer, Zod, Pino, Jest. Dependencies are installed (see `docs/testing-strategy.md` §6); adding or upgrading one still needs approval. Try it locally with `npm run sandbox` (see README). Progress and decisions: `docs/implementation_progress.md`.
 
 ## Read before working
 | Task | Read |

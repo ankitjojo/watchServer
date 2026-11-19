@@ -1,6 +1,6 @@
 # payMonitor — Project Structure
 
-> Status: **Proposed** — no source exists yet; create folders only when the first file needs them (no empty placeholder folders).
+> Status: **Implemented** (v1). Create folders only when the first file needs them (no empty placeholder folders).
 > Why these boundaries: [architecture.md](architecture.md). Naming rules: [coding-standards.md](coding-standards.md#naming).
 
 ```
@@ -12,7 +12,8 @@ paymentMontior/
 │   ├── implementation_plans/     # One plan per feature before coding it
 │   └── *.md                      # Standards & design docs (this folder)
 ├── src/
-│   ├── server.ts                 # Process entry: load config → connect DBs → start scheduler/dispatcher → listen → shutdown hooks
+│   ├── server.ts                 # Process entry: config, real Mongo clients, signals, exit (nothing else)
+│   ├── runtime.ts                # Startup order, indexes, lease → scheduler/dispatcher hooks, shutdown (testable, TD-33)
 │   ├── app.ts                    # createApp(deps): Express app factory (no listen) — used by tests
 │   ├── config/                   # env.schema.ts (Zod) + index.ts exporting frozen `config`
 │   ├── database/                 # monitorDb.ts, sourceDb.ts (client lifecycle), indexes.ts (Monitor DB index setup)
@@ -32,6 +33,7 @@ paymentMontior/
 │   │   ├── alerts/
 │   │   ├── audit/
 │   │   ├── dashboard/
+│   │   ├── monitors/             # Shared monitor actions: run now, pause/resume, test email, history + chart API
 │   │   ├── sourceData/           # ONLY place that reads the Source DB
 │   │   └── health/
 │   ├── scheduler/                # scheduler.ts, leaseLock.ts
@@ -48,8 +50,10 @@ paymentMontior/
 ├── tests/
 │   ├── unit/                     # Mirrors src/ paths; pure functions, services with fakes
 │   ├── integration/              # Repositories + HTTP via supertest + mongodb-memory-server
+│   ├── acceptance/               # One file per requirements section 9 criterion, driving the whole pipeline
 │   └── helpers/                  # Factories, fake clock, fake mail transport, test HTTP server
 ├── scripts/                      # One-off operational scripts (e.g. ensure-indexes) — never destructive by default
+│   └── sandbox/                  # Local try-out environment: memory MongoDBs, fake endpoints, control CLI (never touches real DBs)
 ├── package.json  tsconfig.json  tsconfig.build.json  jest.config.js  eslint.config.js  .prettierrc
 ├── .env.example                  # Every variable from requirements §6 / §5.1 with safe placeholders
 └── .gitignore

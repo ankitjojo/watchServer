@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+.sandbox
+package-lock.json
+src/public/vendor
+docs
+CLAUDE.md
+README.md
+.claude

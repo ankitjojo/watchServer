@@ -5,7 +5,7 @@
 
 ---
 
-## 1. TypeScript configuration (Proposed `tsconfig.json`)
+## 1. TypeScript configuration (`tsconfig.json`)
 
 Mirrors the source backend's strictness, plus checks it left commented out:
 
@@ -130,8 +130,8 @@ export class AppError extends Error {
 ```
 Subclasses: `ValidationError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `ExternalServiceError` (502). Anything else is a 500 with a generic message.
 
-## 8. Formatting & linting (Proposed)
+## 8. Formatting & linting
 
 - Prettier: `singleQuote: true`, `semi: true`, `printWidth: 110`, `trailingComma: 'all'`.
 - ESLint flat config: `@eslint/js` recommended + `typescript-eslint` `strictTypeChecked` + `eslint-config-prettier`. Key rules: `no-floating-promises`, `no-misused-promises`, `no-explicit-any`, `no-non-null-assertion`, `consistent-type-imports`, `no-console` (error; logger only).
-- Import cycle check: `eslint-plugin-import-x` `no-cycle` (Proposed — see testing-strategy quality gates).
+- Import cycle check: `eslint-plugin-import-x` `no-cycle` (see testing-strategy quality gates).

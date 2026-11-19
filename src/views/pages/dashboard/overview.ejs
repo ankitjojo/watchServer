@@ -1,0 +1,47 @@
+<h1>Overview</h1>
+
+<% if (overview.sourceOutage) { %>
+<div class="flash flash-error" role="alert">
+  The source database could not be read since <%= overview.sourceOutage.openedAt %>. <%= overview.sourceOutage.affectedCount %> webhook monitor(s) are affected; their status is left unchanged until it answers again.
+</div>
+<% } %>
+
+<section class="cards" aria-label="Summary">
+  <div class="stat"><span class="stat-value"><%= overview.cards.total %></span><span class="stat-label">Monitors</span></div>
+  <div class="stat"><span class="stat-value"><%= overview.cards.ok %></span><span class="stat-label">OK</span></div>
+  <div class="stat"><span class="stat-value"><%= overview.cards.failing %></span><span class="stat-label">Failing</span></div>
+  <div class="stat"><span class="stat-value"><%= overview.cards.paused %></span><span class="stat-label">Paused</span></div>
+  <div class="stat"><span class="stat-value"><%= overview.cards.openIncidents %></span><span class="stat-label">Open incidents</span></div>
+  <div class="stat"><a href="/alerts?status=FAILED" class="stat-link"><span class="stat-value"><%= overview.cards.emailsFailed %></span><span class="stat-label">Emails failed</span></a></div>
+</section>
+
+<% if (overview.rows.length === 0) { %>
+  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %>
+<%- include('../../partials/emptyState', { message: 'No monitors yet. Create a webhook or endpoint monitor to start watching.', actionHref: '/webhook-monitors/new', actionLabel: 'Create a webhook monitor' }) %>
+  <% } else { %>
+<%- include('../../partials/emptyState', { message: 'No monitors have been set up yet. An admin can create them.' }) %>
+  <% } %>
+<% } else { %>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Monitor</th><th scope="col">Type</th><th scope="col">Status</th>
+        <th scope="col">Last check</th><th scope="col">Next check</th><th scope="col">Last doc age / response</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% overview.rows.forEach(function (m) { %>
+      <tr>
+        <td><a href="<%= m.href %>"><%= m.name %></a></td>
+        <td><%= m.typeLabel %></td>
+        <td><%- include('../../partials/statusBadge', { status: m.status, label: m.statusLabel }) %></td>
+        <td><%= m.lastCheck %></td>
+        <td><%= m.nextCheck %></td>
+        <td><%= m.metric %></td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>

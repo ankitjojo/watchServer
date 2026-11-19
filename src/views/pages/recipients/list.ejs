@@ -1,0 +1,35 @@
+<div class="page-head">
+  <h1>Recipients</h1>
+  <a class="button" href="/recipients/new">New recipient</a>
+</div>
+<p class="muted">Active recipients and all master recipients receive every alert email. Master recipients cannot be deactivated or deleted.</p>
+<% if (rows.length === 0) { %>
+<%- include('../../partials/emptyState', { message: 'No recipients yet.', actionHref: '/recipients/new', actionLabel: 'Add a recipient' }) %>
+<% } else { %>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Actions</th></tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function (r) { %>
+      <tr>
+        <td><%= r.name %></td>
+        <td><%= r.email %></td>
+        <td><% if (r.isMaster) { %><span class="badge badge-master">Master</span><% } else { %>Normal<% } %></td>
+        <td><%- include('../../partials/statusBadge', { status: r.isActive ? 'OK' : 'PAUSED', label: r.isActive ? 'Active' : 'Inactive' }) %></td>
+        <td class="actions">
+          <a href="/recipients/<%= r.id %>/edit">Edit</a>
+          <% if (!r.isMaster) { %>
+          <form class="inline" method="post" action="/recipients/<%= r.id %>/delete" data-confirm="Delete recipient <%= r.email %>?">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+            <button type="submit" class="link danger">Delete</button>
+          </form>
+          <% } %>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>

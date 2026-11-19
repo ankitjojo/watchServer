@@ -12,9 +12,9 @@ paths:
 Schema, indexes and concurrency design: `docs/database-design.md`.
 
 ## Source DB (JOJO subscription backend) — READ ONLY
-- Allowed: `listCollections` (nameOnly), `find().sort({key:-1}).limit(1)` with projection `{_id:1,[key]:1}`, `indexes()`. Nothing else.
+- Allowed: `listCollections` (nameOnly, optionally `{ name }`), `find().sort({key:-1}).limit(1)` with projection `{_id:1,[key]:1}`, `indexes()`. Nothing else.
 - Every query sets `maxTimeMS` from config. Never read full documents (they contain webhook payloads/headers).
-- Collection must be in the live `listCollections` result; timestamp key must match `^[A-Za-z_][A-Za-z0-9_.]{0,63}$`.
+- Collection name must match the pattern and, on save, be in the live `listCollections` result; at check time existence is checked only when the `find` is empty (review M8). Timestamp key must match `^[A-Za-z_][A-Za-z0-9_.]{0,63}$`.
 - Use source field names exactly as they exist (`dCreatedAt`). Don't invent fields — verify in `jojo_subscription_backend_2_0` or the live DB.
 - Never create indexes or write anything to the Source DB, even "to help".
 

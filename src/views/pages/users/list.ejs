@@ -1,0 +1,33 @@
+<div class="page-head">
+  <h1>Users</h1>
+  <a class="button" href="/users/new">New user</a>
+</div>
+<% if (rows.length === 0) { %>
+<%- include('../../partials/emptyState', { message: 'No users yet.', actionHref: '/users/new', actionLabel: 'Create the first user' }) %>
+<% } else { %>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last login</th><th scope="col">Actions</th></tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function (u) { %>
+      <tr>
+        <td><%= u.name %></td>
+        <td><%= u.email %></td>
+        <td><%= u.role %></td>
+        <td><%- include('../../partials/statusBadge', { status: u.isActive ? 'OK' : 'PAUSED', label: u.isActive ? 'Active' : 'Inactive' }) %></td>
+        <td><%= u.lastLogin %></td>
+        <td class="actions">
+          <a href="/users/<%= u.id %>/edit">Edit</a>
+          <form class="inline" method="post" action="/users/<%= u.id %>/delete" data-confirm="Delete user <%= u.email %>?">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+            <button type="submit" class="link danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>

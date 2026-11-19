@@ -1,6 +1,6 @@
 # payMonitor — Database Design
 
-> Status: **Proposed**. Nothing below exists yet — no collection, index or migration has been created.
+> Status: **Implemented** (v1). Indexes are created by `src/database/indexes.ts` (`npm run db:indexes`; automatic outside production). No migrations exist yet.
 > Requirements: [requirements.md §6](requirements.md). Rules: `.claude/rules/database.md`. Decisions: TD-03, TD-08, TD-09, TD-16.
 
 Two MongoDB databases, two clients, two very different rule sets.
@@ -25,9 +25,9 @@ Two MongoDB databases, two clients, two very different rule sets.
 ### A.2 Access rules
 - Client: separate `MongoClient` from `SOURCE_MONGO_URI`, DB user with built-in `read` role on the source DB only.
 - Small pool: `maxPoolSize: 5`, `readPreference: 'secondaryPreferred'` (offload primary; staleness tolerance of seconds is fine) — [Recommendation; confirm source topology].
-- Allowed operations (whole list): `listCollections({}, { nameOnly: true })`, `find(...).sort(...).limit(1)` with projection, `indexes()`.
+- Allowed operations (whole list): `listCollections({} or { name }, { nameOnly: true, maxTimeMS })`, `find(...).sort(...).limit(1)` with projection, `indexes()`. A check runs only the `find`; `listCollections({ name })` follows only when the find is empty, to tell an empty collection (NO_DATA) from a missing one (the monitor's own MONITOR_ERROR, TD-29). Reading a missing collection creates nothing.
 - Every query: projection `{ _id: 1, [key]: 1 }`, `maxTimeMS: SOURCE_QUERY_TIMEOUT_MS`.
-- Collection name and key come from admin input → validate: collection must exist in `listCollections` result; key must match `^[A-Za-z_][A-Za-z0-9_.]{0,63}$` and not start with `$` (prevents operator injection in sort/projection).
+- Collection name and key come from admin input → validate: name pattern always; on save the collection must exist in the `listCollections` result (at check time see above); key must match `^[A-Za-z_][A-Za-z0-9_.]{0,63}$` and not start with `$` (prevents operator injection in sort/projection).
 
 ### A.3 Timestamp parsing (FR-W2)
 `parseSourceTimestamp(value: unknown): Date | null` in `src/utils/timestamp.ts`:
@@ -120,14 +120,14 @@ Invariant "≥ 1 MASTER exists" is enforced in the service (a master cannot be d
 | oRepeatInterval | duration (units `MINUTE`\|`HOUR`\|`DAY`), absent unless `REPEAT_EVERY` |
 | bIsEnabled | boolean |
 | bHasDescIndexAtSave | boolean (for the warning badge) |
-| oState | `{ eCurrentStatus, dLastCheckAt, dNextCheckAt, iLastCheckId, iOpenIncidentId, dLastAlertAt, nReminderCount }` |
-| dDeletedAt | Date \| null |
+| oState | `{ eLastResult, eCurrentStatus, dLastCheckAt, dNextCheckAt, iLastCheckId, iOpenIncidentId, nLastAgeMs, nLastResponseTimeMs }`. `eLastResult` is the last result including `ERROR`; `eCurrentStatus` stays unchanged during a source outage (FR-A4a) and is `ERROR` for the monitor's own per-collection error (TD-29). `dLastAlertAt` / `nReminderCount` live on `incidents` (TD-21). Written only through dotted `$set` on `oState.*`. |
+| dDeletedAt | Date \| null (always stored, `null` while active) |
 | iCreatedBy / iUpdatedBy | ObjectId (users) |
-Indexes: `{ sName: 1 }` unique with `partialFilterExpression: { dDeletedAt: null }`; `{ bIsEnabled: 1, dDeletedAt: 1 }`.
+Indexes: `{ sName: 1 }` unique with `partialFilterExpression: { dDeletedAt: { $type: 'null' } }` (MongoDB rejects `{ field: null }` in a partial filter, so documents must store an explicit `null`); `{ bIsEnabled: 1, dDeletedAt: 1 }`.
 
 #### `endpoint_monitors` (FR-E1)
 Same shape minus `sGatewayName`, `sSourceCollection`, `sTimestampKey`, `bHasDescIndexAtSave`; plus `sServerName`, `sUrl`, `nRetryCount` (0..`ENDPOINT_MAX_RETRY_COUNT`). No `sName`; `sServerName` is the unique display name.
-Indexes: `{ sServerName: 1 }` unique partial on `dDeletedAt: null`; `{ bIsEnabled: 1, dDeletedAt: 1 }`.
+Indexes: `{ sServerName: 1 }` unique partial on `dDeletedAt: { $type: 'null' }`; `{ bIsEnabled: 1, dDeletedAt: 1 }`.
 
 #### `checks` (FR-H1): append-only, high volume
 | Field | Type |
@@ -154,7 +154,10 @@ Growth estimate: 20 monitors × 1/min ≈ 29k docs/day ≈ 10.5M/year. Retention
 | eOpeningResult | check result |
 | aAffectedMonitorIds | ObjectId[] (source outages) |
 | iLastCheckId | ObjectId |
-Indexes: `{ iMonitorId: 1, dOpenedAt: -1 }`; `{ iMonitorId: 1 }` unique partial on `{ eKind: 'MONITOR', dClosedAt: null }` → **at most one open incident per monitor**; `{ eKind: 1 }` unique partial on `{ eKind: 'SOURCE_ERROR', dClosedAt: null }` → at most one open source outage.
+| dLastAlertAt | Date \| null (time of the last email for this incident; reminder timing, TD-21) |
+| nReminderCount | number (reminders sent so far) |
+| eCloseReason | `RECOVERED` \| `MONITOR_DELETED` (set when closed; TD-22) |
+Indexes: `{ iMonitorId: 1, dOpenedAt: -1 }`; `{ iMonitorId: 1 }` unique partial on `{ eKind: 'MONITOR', dClosedAt: { $type: 'null' } }` → **at most one open incident per monitor**; `{ eKind: 1 }` unique partial on `{ eKind: 'SOURCE_ERROR', dClosedAt: { $type: 'null' } }` → at most one open source outage.
 
 #### `alerts` (FR-A1..A6)
 | Field | Type |
@@ -162,13 +165,16 @@ Indexes: `{ iMonitorId: 1, dOpenedAt: -1 }`; `{ iMonitorId: 1 }` unique partial 
 | sDedupeKey | string (TD-09) |
 | eType | alert type |
 | iMonitorId / iIncidentId / iCheckId | ObjectId \| null |
-| oMonitorSnapshot | `{ eMonitorType, sName, sGatewayName?, sSourceCollection?, sTimestampKey?, sUrl?, nThresholdMs?, nCheckIntervalMs? }` |
+| oMonitorSnapshot | `{ eMonitorType, sName, sGatewayName?, sSourceCollection?, sTimestampKey?, sUrl? (masked), nThresholdMs?, nCheckIntervalMs?, eAlertMode?, nRepeatIntervalMs? }`, or `null` for grouped source-outage alerts |
+| aAffectedMonitors? | `[{ iMonitorId, sName, eMonitorType }]`: source-outage alerts only (FR-A4a); `iMonitorId` is `null` on those alerts |
 | aRecipients | `[{ sName, sEmail, eType }]` resolved at creation |
 | sSubject / sTextBody / sHtmlBody | string (rendered at creation, so what was sent is what's stored) |
 | eStatus | `PENDING`\|`RETRYING`\|`SENT`\|`FAILED` |
 | aAttempts | `[{ dAt, bIsSuccess, sErrorCode?, sErrorMessage? }]` |
-| dNextAttemptAt | Date \| null |
+| nRetryIndex | number: backoff steps used so far; reset to 0 by a manual resend (D13) |
+| dNextAttemptAt | Date \| null (when the dispatcher may send it; the grouped outage mail uses `incident.dOpenedAt + SOURCE_ERROR_GROUP_WINDOW_MS`) |
 | dLockedUntil | Date \| null (dispatcher claim) |
+| sClaimId | string \| null (token of the current claim; outcome writes match it, TD-32; absent on older documents) |
 | dSentAt / sMessageId / sFailureReason | |
 Indexes: `{ sDedupeKey: 1 }` unique; `{ eStatus: 1, dNextAttemptAt: 1 }` (dispatcher); `{ iMonitorId: 1, dCreatedAt: -1 }`; `{ dCreatedAt: -1 }`.
 
@@ -180,8 +186,8 @@ Indexes: `{ sDedupeKey: 1 }` unique; `{ eStatus: 1, dNextAttemptAt: 1 }` (dispat
 | eAction | `CREATE`\|`UPDATE`\|`DELETE`\|`PAUSE`\|`RESUME`\|`RESEND`\|`LOGIN`… |
 | eEntityType | `USER`\|`RECIPIENT`\|`WEBHOOK_MONITOR`\|`ENDPOINT_MONITOR` |
 | iEntityId | ObjectId |
-| oBefore / oAfter | object (with `sPasswordHash` stripped) |
-| dAt | Date |
+| oBefore / oAfter | opaque snapshots of the **domain** object (camelCase, passwords/hashes/CSRF stripped). This is the one documented exception to prefixed names (TD-16): they are payload, not queryable schema. |
+| dAt | Date (audit logs are append-only: no `dCreatedAt`/`dUpdatedAt`) |
 Indexes: `{ eEntityType: 1, iEntityId: 1, dAt: -1 }`; `{ dAt: -1 }`.
 
 #### `scheduler_locks` (TD-05)
@@ -207,7 +213,7 @@ Transactions are **not** required by this design (open question A1).
 - Chart series: aggregate server-side, cap points (≤ 500) by bucketing for 7d/30d ranges.
 
 ### B.4 Schema evolution
-- No migration framework initially. Index creation in `src/database/indexes.ts`, run explicitly via `npm run db:indexes` (not silently on every boot in production) — [Recommendation].
+- No migration framework initially. Index creation in `src/database/indexes.ts`, run at every startup in every environment (idempotent; a failure stops startup, TD-31) and on demand via `npm run db:indexes`.
 - Additive changes only (new optional fields). Renames/removals need a written plan in `docs/implementation_plans/` + a script under `scripts/` that defaults to **dry-run**.
 - Repositories tolerate missing optional fields (old docs).
 

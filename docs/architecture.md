@@ -1,6 +1,6 @@
 # payMonitor — Architecture
 
-> Status: **Proposed** (no code exists yet). Source of truth for WHAT: [requirements.md](requirements.md).
+> Status: **Implemented** (v1; see §5.5 for the composition root and lease). Source of truth for WHAT: [requirements.md](requirements.md).
 > Decisions and trade-offs: [technical-decisions.md](technical-decisions.md). Folder layout: [project-structure.md](project-structure.md).
 
 Legend used in this doc: **[Confirmed]** = stated in requirements or verified in code · **[Decision]** = agreed with the user · **[Recommendation]** = proposed, change via technical-decisions.md · **[Open]** = unresolved.
@@ -88,10 +88,10 @@ Hard rules:
 ### 5.1 Webhook check (FR-W3) — one scheduled run
 1. Scheduler fires for monitor `M` → skip if `M` already in flight (log `check.skipped`).
 2. Runner calls `sourceData.getLatestTimestamp(collection, key)` (projection `{_id, key}`, `maxTimeMS`).
-3. Pure `evaluateStaleness({ latestTs, now, thresholdMs })` → `OK | STALE | NO_DATA`. Source failure → `ERROR`.
+3. Pure `evaluateStaleness({ latestTs, now, thresholdMs })` → `OK | STALE | NO_DATA`. Source failure → `ERROR`. The read is one `find`; existence (`listCollections` by name) is checked only when it comes back empty (review M8).
 4. `checks.service.record(...)` inserts the check.
-5. `ERROR` → `alerts.service.handleSourceError(...)` (grouped, master only, FR-A4a). Monitor state unchanged.
-   Otherwise → pure `decideAlert({ monitorState, result, alertMode, repeatIntervalMs, now })` returns actions:
+5. Source DB **outage** (connection-level, TD-29) → `alerts.service.handleSourceError(...)` (grouped, master only, FR-A4a). Monitor state unchanged.
+   A per-collection `ERROR` (missing collection, timeout, query error) is the monitor's own failure and, like every other result, goes to `processCheckOutcome` → pure `decideAlert({ monitorState, result, alertMode, repeatIntervalMs, now })` returns actions:
    `openIncident | sendFailure | sendReminder | closeIncident+sendRecovered | none`.
 6. Apply actions: incidents update, alert docs inserted with status `PENDING` (**store first**), monitor `oState.eCurrentStatus / dLastCheckAt / dNextCheckAt` updated atomically.
 7. Dispatcher picks up PENDING alerts (immediately via in-process nudge, and by polling as a fallback).
@@ -100,16 +100,24 @@ Hard rules:
 Same as 5.1 but step 2 is `httpProbe(url, { timeoutMs, retryCount, retryDelayMs, maxRedirects })` returning all attempts. `DOWN` only if every attempt fails. No `ERROR` grouping — an unreachable URL **is** the alert.
 
 ### 5.3 Alert dispatch (FR-A1, FR-A2)
-1. Atomically claim one due alert: `findOneAndUpdate({eStatus ∈ {PENDING,RETRYING}, dNextAttemptAt ≤ now, dLockedUntil < now}, {$set:{dLockedUntil}})`.
+1. Atomically claim one due alert: `findOneAndUpdate({eStatus ∈ {PENDING,RETRYING}, dNextAttemptAt ≤ now, dLockedUntil < now}, {$set:{dLockedUntil, sClaimId}})`. Outcome writes match `sClaimId`, so an expired claim cannot overwrite the dispatcher that took over (TD-32).
 2. Resolve recipients at creation time (already stored on the alert) → send via email module.
-3. Success → `SENT` (+`dSentAt`, `sMessageId`). Failure → `RETRYING` with next backoff from config; after last → `FAILED`.
+3. Success → `SENT` (+`dSentAt`, `sMessageId`). Failure (or the overall send deadline of 2 × `SMTP_TIMEOUT_MS`) → `RETRYING` with next backoff from config; after last → `FAILED`. Delivery is at-least-once.
 4. On startup, the dispatcher resumes PENDING/RETRYING alerts (FR crash-safety, §5 of requirements).
 
 ### 5.4 Scheduler lifecycle (FR-S1..S4)
-- Boot: acquire lease → load enabled, non-deleted monitors → run each immediately → then every interval (`setTimeout` chain computed from `lastStartedAt + interval`, not `setInterval`, to avoid drift pile-up).
+- Boot: acquire lease → load enabled, non-deleted monitors (the scheduler is active only once this worked; a failure releases the lease and is retried, review H3) → run each immediately → then every interval (`setTimeout` chain computed from `lastStartedAt + interval`, not `setInterval`, to avoid drift pile-up).
 - Monitor create/edit/pause/resume/delete → service calls `scheduler.upsert(id)` / `scheduler.remove(id)` (in-process, immediate).
+- `SCHEDULER_CONCURRENCY` caps webhook checks only (Source DB reads); endpoint probes are not queued behind it (review M7). Delays above the Node timer limit are refused (TD-30).
 - Lease lost → stop all timers, log `error`, keep serving the dashboard read-only for checks.
 - Shutdown: stop timers → await in-flight checks (bounded) → stop dispatcher → close DB clients.
+
+### 5.5 Composition root, lease and shutdown (TD-28)
+- `src/runtime.ts` (TD-33) owns startup, the lease hooks and shutdown; `server.ts` only provides the real clients, signals and `exit`.
+- `src/compositionRoot.ts` builds every service in one place with plain factory arguments. Monitor services receive a **late-bound scheduler port**, and the real scheduler is bound after the runners exist, which breaks the cycle monitor service → scheduler → runner → monitor service.
+- The scheduler lease (`scheduler_locks`) is renewed every `LEASE_RENEW_MS`. A holder that cannot renew **steps down at `renewal request time + LEASE_TTL_MS − LEASE_RENEW_MS`**, before the lease can expire for another instance, so two leaders never overlap. A watchdog enforces that moment even while a renewal hangs, `isHeld()` is time-based, and each lease operation is abandoned after `LEASE_RENEW_MS` (TD-32). On `acquired` the runtime starts the scheduler, then the dispatcher; on `lost` it stops both; the dispatcher only sends while `lease.isHeld()`.
+- Startup: config → Monitor DB (fatal if down) → Source DB (non-blocking) → indexes (every environment, fatal on failure, TD-31) → services → seeds → listen → lease. Shutdown: stop accepting connections **and, in parallel,** release the lease (stops the scheduler and waits for running checks, then the dispatcher) → close both Mongo clients. Hard exit after `SHUTDOWN_TIMEOUT_MS + send deadline + 5 s` (review M9).
+- `/readyz` reports `leader` (scheduler running), `standby` (lease loop running, not held) or `stopped`.
 
 ## 6. Cross-cutting
 

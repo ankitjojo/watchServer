@@ -1,0 +1,58 @@
+<%
+  var v = locals.values || {};
+  var ci = v.checkInterval || {};
+  var ri = v.repeatInterval || {};
+  var isEnabled = v.isEnabled === true || v.isEnabled === 'on' || v.isEnabled === 'true';
+%>
+<h1><%= mode === 'create' ? 'New endpoint monitor' : 'Edit endpoint monitor' %></h1>
+<% if (errors._form) { %><div class="flash flash-error" role="alert"><%= errors._form %></div><% } %>
+<form method="post" action="<%= mode === 'create' ? '/endpoint-monitors/new' : '/endpoint-monitors/' + id + '/edit' %>" class="card" id="monitor-form" novalidate>
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+
+  <label for="serverName">Server name</label>
+  <input id="serverName" name="serverName" type="text" maxlength="100" required value="<%= v.serverName || '' %>" />
+  <%- include('../../partials/fieldError', { field: 'serverName' }) %>
+
+  <label for="url">Endpoint URL</label>
+  <input id="url" name="url" type="text" inputmode="url" maxlength="2048" required placeholder="https://api.example.com/health" value="<%= v.url || '' %>" />
+  <small class="muted">GET request, expects status 200. http or https only, no username or password in the URL.</small>
+  <%- include('../../partials/fieldError', { field: 'url' }) %>
+
+  <label for="checkInterval-value">Check every</label>
+  <div class="row">
+    <input id="checkInterval-value" name="checkInterval[value]" type="number" min="1" max="10000" required value="<%= ci.value || '' %>" />
+    <select name="checkInterval[unit]" aria-label="Check interval unit">
+      <% units.interval.forEach(function (u) { %><option value="<%= u %>" <%= ci.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+    </select>
+  </div>
+  <%- include('../../partials/fieldError', { field: 'checkInterval.value' }) %>
+  <%- include('../../partials/fieldError', { field: 'checkInterval.unit' }) %>
+
+  <label for="retryCount">Retry count (0 to <%= maxRetryCount %>)</label>
+  <input id="retryCount" name="retryCount" type="number" min="0" max="<%= maxRetryCount %>" required value="<%= v.retryCount === undefined ? '' : v.retryCount %>" />
+  <%- include('../../partials/fieldError', { field: 'retryCount' }) %>
+
+  <label for="alertMode">Alert mode</label>
+  <select id="alertMode" name="alertMode">
+    <% alertModes.forEach(function (m) { %><option value="<%= m.value %>" <%= v.alertMode === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %>
+  </select>
+  <%- include('../../partials/fieldError', { field: 'alertMode' }) %>
+
+  <div id="repeat-group" data-show-for="REPEAT_EVERY">
+    <label for="repeatInterval-value">Repeat interval <small class="muted">(only for "Repeat every N"; not shorter than the check interval)</small></label>
+    <div class="row">
+      <input id="repeatInterval-value" name="repeatInterval[value]" type="number" min="1" max="10000" value="<%= ri.value || '' %>" />
+      <select name="repeatInterval[unit]" aria-label="Repeat interval unit">
+        <% units.repeat.forEach(function (u) { %><option value="<%= u %>" <%= ri.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+      </select>
+    </div>
+    <%- include('../../partials/fieldError', { field: 'repeatInterval.value' }) %>
+  </div>
+
+  <label class="checkbox"><input type="checkbox" name="isEnabled" value="on" <%= isEnabled ? 'checked' : '' %> /> Enabled</label>
+
+  <div class="form-actions">
+    <button type="submit">Save</button>
+    <a href="<%= mode === 'create' ? '/endpoint-monitors' : '/endpoint-monitors/' + id %>">Cancel</a>
+  </div>
+</form>

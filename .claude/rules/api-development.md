@@ -11,9 +11,9 @@ paths:
 
 Contracts, route map, status codes: `docs/api-standards.md`.
 
-- Every route declares: auth (`requireAuth`), role (`requireRole('ADMIN')` for any mutation or any action that hits Source DB/SMTP/endpoints), CSRF for non-GET, and a Zod `validate({ params, query, body })`.
+- Every route declares: auth (`requireAuth`), role (`requireRole('ADMIN')` for any mutation or any action that hits Source DB/SMTP/endpoints), CSRF for non-GET, and a Zod `defineValidation({ params, query, body })` handler.
 - Forms, JSON request/response bodies and query params are camelCase (`name`, `threshold.value`). Never send stored prefixed names or raw documents to clients/views; use the module mapper (TD-16). `_id` → `id`.
-- Validated input is read from `res.locals.input`, never from raw `req.body`/`req.query`.
+- Validated input is read through the route group's `defineValidation` object (`v.read(res)`), never from raw `req.body`/`req.query`.
 - Zod schemas: `.strict()` objects, bounded strings/numbers, `z.coerce` for form numbers, cross-field rules in `superRefine`, shared `objectIdSchema` for ids.
 - JSON API under `/api/v1` uses the envelope `{ success, data, meta? }` / `{ success:false, error:{ code, message, details?, requestId } }`. Error codes come from `src/errors`.
 - Pages: POST → 303 redirect on success; re-render the form with field errors (status 400) on validation failure, keeping entered values.

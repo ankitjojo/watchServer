@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="<%= locals.csrfToken || '' %>" />
+    <title><%= locals.pageTitle ? pageTitle + ' · ' : '' %>payMonitor</title>
+    <link rel="stylesheet" href="/public/css/app.css" />
+  </head>
+  <body>
+    <%- include('../partials/nav') %>
+    <main class="container">
+      <%- include('../partials/flash') %>
+      <%# body is a page template we rendered ourselves (renderPage); it escapes its own values. %>
+      <%- body %>
+    </main>
+    <script src="/public/js/api.js" defer></script>
+    <script src="/public/js/confirm.js" defer></script>
+    <% (locals.scripts || []).forEach(function (src) { %>
+    <script src="<%= src %>" defer></script>
+    <% }) %>
+  </body>
+</html>

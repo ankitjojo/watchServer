@@ -1,0 +1,89 @@
+<%
+  var v = locals.values || {};
+  var ci = v.checkInterval || {};
+  var th = v.threshold || {};
+  var ri = v.repeatInterval || {};
+  var isEnabled = v.isEnabled === true || v.isEnabled === 'on' || v.isEnabled === 'true';
+%>
+<h1><%= mode === 'create' ? 'New webhook monitor' : 'Edit webhook monitor' %></h1>
+<% if (errors._form) { %><div class="flash flash-error" role="alert"><%= errors._form %></div><% } %>
+<form method="post" action="<%= mode === 'create' ? '/webhook-monitors/new' : '/webhook-monitors/' + id + '/edit' %>" class="card" id="monitor-form" novalidate>
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+
+  <label for="name">Monitor name</label>
+  <input id="name" name="name" type="text" maxlength="100" required value="<%= v.name || '' %>" />
+  <%- include('../../partials/fieldError', { field: 'name' }) %>
+
+  <label for="gatewayName">Payment gateway name</label>
+  <input id="gatewayName" name="gatewayName" type="text" maxlength="60" required value="<%= v.gatewayName || '' %>" />
+  <%- include('../../partials/fieldError', { field: 'gatewayName' }) %>
+
+  <label for="sourceCollection">Collection (source database)</label>
+  <% if (collections.length > 0) { %>
+  <select id="sourceCollection" name="sourceCollection" required>
+    <option value="">Choose a collection</option>
+    <% collections.forEach(function (c) { %>
+    <option value="<%= c %>" <%= v.sourceCollection === c ? 'selected' : '' %>><%= c %></option>
+    <% }) %>
+    <% if (v.sourceCollection && collections.indexOf(v.sourceCollection) === -1) { %>
+    <option value="<%= v.sourceCollection %>" selected><%= v.sourceCollection %> (not found)</option>
+    <% } %>
+  </select>
+  <% } else { %>
+  <input id="sourceCollection" name="sourceCollection" type="text" maxlength="120" required value="<%= v.sourceCollection || '' %>" />
+  <small class="muted">The list of collections could not be loaded from the source database, so type the name.</small>
+  <% } %>
+  <%- include('../../partials/fieldError', { field: 'sourceCollection' }) %>
+
+  <label for="timestampKey">Timestamp key</label>
+  <div class="row">
+    <input id="timestampKey" name="timestampKey" type="text" maxlength="64" required value="<%= v.timestampKey || '' %>" />
+    <button type="button" id="validate-key" data-endpoint="/api/v1/source/validate-timestamp-key">Validate key</button>
+  </div>
+  <output id="validate-result" class="muted" aria-live="polite"></output>
+  <%- include('../../partials/fieldError', { field: 'timestampKey' }) %>
+
+  <label for="checkInterval-value">Check every</label>
+  <div class="row">
+    <input id="checkInterval-value" name="checkInterval[value]" type="number" min="1" max="10000" required value="<%= ci.value || '' %>" />
+    <select name="checkInterval[unit]" aria-label="Check interval unit">
+      <% units.interval.forEach(function (u) { %><option value="<%= u %>" <%= ci.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+    </select>
+  </div>
+  <%- include('../../partials/fieldError', { field: 'checkInterval.value' }) %>
+  <%- include('../../partials/fieldError', { field: 'checkInterval.unit' }) %>
+
+  <label for="threshold-value">Trigger when no document for</label>
+  <div class="row">
+    <input id="threshold-value" name="threshold[value]" type="number" min="1" max="10000" required value="<%= th.value || '' %>" />
+    <select name="threshold[unit]" aria-label="Threshold unit">
+      <% units.threshold.forEach(function (u) { %><option value="<%= u %>" <%= th.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+    </select>
+  </div>
+  <%- include('../../partials/fieldError', { field: 'threshold.value' }) %>
+  <%- include('../../partials/fieldError', { field: 'threshold.unit' }) %>
+
+  <label for="alertMode">Alert mode</label>
+  <select id="alertMode" name="alertMode">
+    <% alertModes.forEach(function (m) { %><option value="<%= m.value %>" <%= v.alertMode === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %>
+  </select>
+  <%- include('../../partials/fieldError', { field: 'alertMode' }) %>
+
+  <div id="repeat-group" data-show-for="REPEAT_EVERY">
+    <label for="repeatInterval-value">Repeat interval <small class="muted">(only for "Repeat every N"; not shorter than the check interval)</small></label>
+    <div class="row">
+      <input id="repeatInterval-value" name="repeatInterval[value]" type="number" min="1" max="10000" value="<%= ri.value || '' %>" />
+      <select name="repeatInterval[unit]" aria-label="Repeat interval unit">
+        <% units.repeat.forEach(function (u) { %><option value="<%= u %>" <%= ri.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+      </select>
+    </div>
+    <%- include('../../partials/fieldError', { field: 'repeatInterval.value' }) %>
+  </div>
+
+  <label class="checkbox"><input type="checkbox" name="isEnabled" value="on" <%= isEnabled ? 'checked' : '' %> /> Enabled</label>
+
+  <div class="form-actions">
+    <button type="submit">Save</button>
+    <a href="<%= mode === 'create' ? '/webhook-monitors' : '/webhook-monitors/' + id %>">Cancel</a>
+  </div>
+</form>

@@ -62,7 +62,7 @@ It has two parts:
 | Payment gateway name | Required, free text | `Razorpay` |
 | Collection name | Required. Chosen from a **dropdown of live collections in the source DB**. | `razor_pay_webhook_data` |
 | Timestamp key | Required, typed. Validated before saving (see FR-W2). | `dCreatedAt` |
-| Check every (cron duration) | Number + unit. Units: `minute`, `hour`. Minimum 1 minute. | `every 10 minute` |
+| Check every (cron duration) | Number + unit. Units: `minute`, `hour`. Minimum 1 minute, maximum 24 hours (`MAX_CHECK_INTERVAL_MIN`, TD-30). | `every 10 minute` |
 | Trigger when no doc for (threshold) | Number + unit. Units: `minute`, `hour`, `day`, `week`, `month` (1 month = `DAYS_PER_MONTH` days, default 30; see §5.1). | `2 hour` |
 | Alert mode | `Once + recovery`, `Every check` or `Repeat every N` (see FR-A3) | `Once + recovery` |
 | Repeat interval | Only shown and required when mode is `Repeat every N`. Number + unit (`minute`, `hour`, `day`). Must be ≥ the check interval. | `30 minute` |
@@ -102,7 +102,7 @@ It has two parts:
 |-------|-------|---------|
 | Server name | Required, unique | `Subscription API – prod` |
 | Endpoint URL | Required, valid `http(s)://` URL | `https://api.example.com/health` |
-| Check every | Number + unit. Units: `minute`, `hour`. Minimum 1 minute. | `every 5 minute` |
+| Check every | Number + unit. Units: `minute`, `hour`. Minimum 1 minute, maximum 24 hours (TD-30). | `every 5 minute` |
 | Retry count | Integer 0–5, default 2 | `2` |
 | Alert mode | `Once + recovery`, `Every check` or `Repeat every N` | |
 | Repeat interval | Only for `Repeat every N`; same rules as FR-W1 | |
@@ -151,16 +151,16 @@ It has two parts:
 - `WEBHOOK_NO_DATA`
 - `ENDPOINT_DOWN`
 - `RECOVERED`
-- `MONITOR_ERROR` (the source DB is unreachable, or the query errored)
+- `MONITOR_ERROR`: either (a) the source DB is unreachable (an outage, FR-A4a), or (b) one monitor's own collection could not be read: the collection is missing, the query timed out or the query errored (TD-29)
 - `TEST` (sent by the test email button)
 
-**FR-A4a. `MONITOR_ERROR` is handled differently:**
+**FR-A4a. A source DB outage is handled differently.** An outage means the source DB itself cannot be reached: server selection, network or authentication failure. A failure limited to one collection is **not** an outage; it is that monitor's own `MONITOR_ERROR`, sent to the normal recipients (FR-A5) under the monitor's alert mode, not grouped, and recovered only by that monitor's own next successful check (TD-29, decided 2026-11-18). For an outage:
 - It goes to **master recipients only**.
 - It **ignores the monitor's alert mode**: one email per outage, then one RECOVERED email (also to masters only) when the source DB answers again.
 - If many webhook monitors fail at the same time because the source DB is down, they are grouped into **one** `MONITOR_ERROR` incident that lists every affected monitor, instead of one email per monitor.
 - During a source DB outage the monitors' own STALE/NO_DATA state is left unchanged, so an outage does not look like a gateway problem.
 
-**FR-A5. Recipients for each alert.** Every **active** recipient plus every **master** recipient. `MONITOR_ERROR` is the exception (FR-A4a). The list is worked out when the alert is created and is saved on the alert. If there are no recipients at all, the alert is still stored, with status `FAILED` and the reason "no recipients".
+**FR-A5. Recipients for each alert.** Every **active** recipient plus every **master** recipient. A source DB outage (`MONITOR_ERROR`, FR-A4a) is the exception. The list is worked out when the alert is created and is saved on the alert. If there are no recipients at all, the alert is still stored, with status `FAILED` and the reason "no recipients".
 
 **FR-A6. Subject format:** `[payMonitor] <TYPE> – <monitor name>`. Examples:
 - `[payMonitor] WEBHOOK_STALE – Razorpay webhooks`
@@ -283,10 +283,21 @@ All tuning values live in **one typed config module** (`src/config/`). Each valu
 | `SOURCE_QUERY_TIMEOUT_MS` | `10000` | `maxTimeMS` on source DB queries |
 | `DAYS_PER_MONTH` | `30` | Converts the `month` unit (FR-W1) |
 | `MIN_CHECK_INTERVAL_MIN` | `1` | Smallest allowed check interval |
+| `MAX_CHECK_INTERVAL_MIN` | `1440` | Largest allowed check interval (at most 1440 = 24 h; TD-30) |
 | `TIMEZONE` | `UTC` | Time zone for display and emails (FR-D7) |
 | `LOGIN_RATE_LIMIT` | `5 per 15 min` | Login attempts per IP |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | — | First admin (§3) |
 | `MASTER_ALERT_EMAIL` / `MASTER_ALERT_NAME` | — | First master recipient (FR-R3) |
+| `SOURCE_ERROR_GROUP_WINDOW_MS` | `60000` | How long to wait before sending the grouped `MONITOR_ERROR` email so more affected monitors can join it (FR-A4a) |
+| `ACTION_RATE_LIMIT` | `10 per 1 min` | Run-check-now and test-email calls per user |
+| `MAIL_TRANSPORT` / `MAIL_OUTBOX_DIR` | `smtp` / `./.sandbox/outbox` | `outbox` writes `.eml` files instead of sending (dev and sandbox only; startup refuses it when `NODE_ENV=production`) |
+| `SMTP_TIMEOUT_MS` / `SMTP_SECURE` | `15000` / `false` | SMTP connection timeout and TLS mode |
+| `DISPATCHER_POLL_MS` / `DISPATCHER_LOCK_MS` | `10000` / `120000` | Alert dispatcher polling and claim lock time. The lock must be greater than 2 × `SMTP_TIMEOUT_MS`, the overall deadline of one send (TD-32) |
+| `LEASE_TTL_MS` / `LEASE_RENEW_MS` | `45000` / `15000` | Scheduler lease (single active instance) |
+| `SHUTDOWN_TIMEOUT_MS` | `15000` | Max wait for in-flight checks on shutdown |
+| `SCHEDULER_CONCURRENCY` | `5` | Max webhook checks (Source DB reads) running at once. Endpoint probes are not limited by it (review M7) |
+| `SESSION_MAX_AGE_MS` | `28800000` | Login session length (8 h) |
+| `MONGO_DB_NAME`, `TRUST_PROXY`, `LOG_LEVEL` | `paymonitor`, `0`, `info` | Monitor DB name, proxy hops, log level |
 
 ---
 
