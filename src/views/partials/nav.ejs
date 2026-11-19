@@ -1,20 +1,28 @@
-<header class="topbar">
+<% if (locals.currentUser) { %>
+<%
+  const path = locals.currentPath || '';
+  const isActive = (href) => (href === '/' ? path === '/' : path === href || path.startsWith(href + '/'));
+  const link = (href, label) =>
+    '<a href="' + href + '"' + (isActive(href) ? ' class="active" aria-current="page"' : '') + '>' + label + '</a>';
+%>
+<aside class="sidebar">
   <a class="brand" href="/"><%= appName %></a>
-  <% if (locals.currentUser) { %>
   <nav aria-label="Main">
-    <a href="/">Overview</a>
-    <a href="/webhook-monitors">Webhook monitors</a>
-    <a href="/endpoint-monitors">Endpoint monitors</a>
-    <a href="/alerts">Alerts</a>
+    <%- link('/', 'Overview') %>
+    <%- link('/webhook-monitors', 'Webhook monitors') %>
+    <%- link('/endpoint-monitors', 'Endpoint monitors') %>
+    <%- link('/alerts', 'Alerts') %>
     <% if (currentUser.role === 'ADMIN') { %>
-    <a href="/recipients">Recipients</a>
-    <a href="/users">Users</a>
+    <%- link('/recipients', 'Recipients') %>
+    <%- link('/users', 'Users') %>
     <% } %>
   </nav>
-  <form class="inline" method="post" action="/logout">
+  <form class="inline sidebar-user" method="post" action="/logout">
     <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
     <span class="muted"><%= currentUser.name %> (<%= currentUser.role %>)</span>
     <button type="submit" class="link">Sign out</button>
   </form>
-  <% } %>
-</header>
+</aside>
+<% } else { %>
+<header class="topbar"><a class="brand" href="/"><%= appName %></a></header>
+<% } %>

@@ -19,7 +19,7 @@
   <%- include('../../partials/fieldError', { field: 'url' }) %>
 
   <label for="checkInterval-value">Check every</label>
-  <div class="row">
+  <div class="field-row">
     <input id="checkInterval-value" name="checkInterval[value]" type="number" min="1" max="10000" required value="<%= ci.value || '' %>" />
     <select name="checkInterval[unit]" aria-label="Check interval unit">
       <% units.interval.forEach(function (u) { %><option value="<%= u %>" <%= ci.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
@@ -40,7 +40,7 @@
 
   <div id="repeat-group" data-show-for="REPEAT_EVERY">
     <label for="repeatInterval-value">Repeat interval <small class="muted">(only for "Repeat every N"; not shorter than the check interval)</small></label>
-    <div class="row">
+    <div class="field-row">
       <input id="repeatInterval-value" name="repeatInterval[value]" type="number" min="1" max="10000" value="<%= ri.value || '' %>" />
       <select name="repeatInterval[unit]" aria-label="Repeat interval unit">
         <% units.repeat.forEach(function (u) { %><option value="<%= u %>" <%= ri.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>

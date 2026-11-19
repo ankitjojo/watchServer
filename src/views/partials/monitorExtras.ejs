@@ -1,6 +1,6 @@
 <section class="card" id="chart-section">
   <h2><%= extras.chart.type === 'webhook' ? 'Document age' : 'Response time and availability' %></h2>
-  <div class="row range-picker" id="chart-controls">
+  <div class="field-row range-picker" id="chart-controls">
     <button type="button" data-range="24h">24 h</button>
     <button type="button" data-range="7d">7 d</button>
     <button type="button" data-range="30d">30 d</button>
@@ -35,7 +35,7 @@
   <p class="muted">No checks match.</p>
   <% } else { %>
   <div class="table-wrap">
-    <table>
+    <table class="table table-hover table-sm align-middle mb-0">
       <thead><tr><th scope="col">Started</th><th scope="col">Result</th><th scope="col">Trigger</th><th scope="col">Details</th></tr></thead>
       <tbody>
         <% extras.history.rows.forEach(function (c) { %>
@@ -59,7 +59,7 @@
   <p class="muted">No incidents.</p>
   <% } else { %>
   <div class="table-wrap">
-    <table>
+    <table class="table table-hover table-sm align-middle mb-0">
       <thead><tr><th scope="col">Started</th><th scope="col">Ended</th><th scope="col">Duration</th><th scope="col">Note</th></tr></thead>
       <tbody>
         <% extras.incidents.forEach(function (i) { %>

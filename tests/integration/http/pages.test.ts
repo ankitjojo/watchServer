@@ -265,6 +265,21 @@ describe('global alert log (FR-D5)', () => {
   });
 });
 
+describe('main navigation marks the current section', () => {
+  const active = (html: string): string[] =>
+    [...html.matchAll(/<a href="([^"]*)" class="active" aria-current="page">/g)].map((m) => m[1] ?? '');
+
+  it('marks exactly the section the user is in, including its sub-pages', async () => {
+    const admin = await t.loginAs(ADMIN);
+    expect(active((await admin.get('/')).text)).toEqual(['/']);
+    expect(active((await admin.get('/alerts')).text)).toEqual(['/alerts']);
+    expect(active((await admin.get('/webhook-monitors')).text)).toEqual(['/webhook-monitors']);
+    expect(active((await admin.get('/webhook-monitors/new')).text)).toEqual(['/webhook-monitors']);
+    expect(active((await admin.get('/recipients')).text)).toEqual(['/recipients']);
+    expect(active((await admin.get('/users')).text)).toEqual(['/users']);
+  });
+});
+
 describe('product name from APP_NAME (plan app-name-from-env)', () => {
   const brand = (html: string): string => /<a class="brand" href="\/">([^<]*)<\/a>/.exec(html)?.[1] ?? '';
   const title = (html: string): string => /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '';

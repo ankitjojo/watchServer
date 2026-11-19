@@ -82,8 +82,10 @@ export function createApp(deps: AppDeps): Express {
   app.use(requestContext);
   // The product name people see (APP_NAME). Set first so even early errors (CSRF, bad session) can render
   // an error page; views print it with <%= %>, so it is escaped.
-  app.use((_req, res, next) => {
+  app.use((req, res, next) => {
     res.locals.appName = config.appName;
+    // Lets the nav mark the current section (the path only, never the query string).
+    res.locals.currentPath = req.path;
     next();
   });
   // Ops endpoints need no session and no logging noise.
@@ -135,6 +137,9 @@ export function createApp(deps: AppDeps): Express {
   // src/ and dist/ both sit one level below the project root, where node_modules lives.
   const chartDist = path.resolve(SRC_DIR, '..', 'node_modules', 'chart.js', 'dist');
   app.use('/vendor/chart.js', express.static(chartDist, staticOptions));
+  // Bootstrap: CSS only (no JS), so CSP stays `script-src 'self'` and `style-src 'self'`.
+  const bootstrapCss = path.resolve(SRC_DIR, '..', 'node_modules', 'bootstrap', 'dist', 'css');
+  app.use('/vendor/bootstrap', express.static(bootstrapCss, staticOptions));
 
   app.use(
     session({

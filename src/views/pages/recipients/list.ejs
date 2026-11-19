@@ -7,7 +7,7 @@
 <%- include('../../partials/emptyState', { message: 'No recipients yet.', actionHref: '/recipients/new', actionLabel: 'Add a recipient' }) %>
 <% } else { %>
 <div class="table-wrap">
-  <table>
+  <table class="table table-hover table-sm align-middle mb-0">
     <thead>
       <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Actions</th></tr>
     </thead>

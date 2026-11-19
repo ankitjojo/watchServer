@@ -2,11 +2,12 @@
   <h1>Users</h1>
   <a class="button" href="/users/new">New user</a>
 </div>
+<p class="muted">Dashboard logins. Admins can change everything; viewers can only look. There must always be at least one active admin.</p>
 <% if (rows.length === 0) { %>
 <%- include('../../partials/emptyState', { message: 'No users yet.', actionHref: '/users/new', actionLabel: 'Create the first user' }) %>
 <% } else { %>
 <div class="table-wrap">
-  <table>
+  <table class="table table-hover table-sm align-middle mb-0">
     <thead>
       <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last login</th><th scope="col">Actions</th></tr>
     </thead>

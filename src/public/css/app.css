@@ -8,6 +8,12 @@
   --ok: #1a7f37;
   --warn: #9a6700;
   --bad: #b42318;
+  --bs-body-bg: var(--surface);
+  --bs-body-color: var(--text);
+  --bs-border-color: var(--border);
+  --bs-emphasis-color-rgb: 28, 36, 48;
+  --bs-secondary-color: var(--muted);
+  --bs-emphasis-color: var(--text);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -20,6 +26,8 @@
     --ok: #4cc26b;
     --warn: #e3b341;
     --bad: #ff7b72;
+    --bs-emphasis-color-rgb: 230, 234, 240;
+    --bs-emphasis-color: var(--text);
   }
 }
 * {
@@ -40,29 +48,100 @@ a {
   color: var(--accent);
 }
 .topbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  align-items: center;
   padding: 10px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.topbar nav {
+.app-shell.has-sidebar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
+  min-height: 100vh;
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 0 0 220px;
+  height: 100vh;
+  padding: 16px 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
+}
+.sidebar nav a {
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 500; /* same weight on every state: a bolder active link would reflow the text */
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.sidebar nav a:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.sidebar nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.sidebar nav a.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent); /* inset: draws inside the box, so nothing moves */
+}
+.sidebar-user {
+  padding-left: 12px;
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.sidebar .brand {
+  padding: 4px 12px 12px;
+  border-bottom: 1px solid var(--border);
 }
 .brand {
   font-weight: 700;
+  font-size: 18px;
   text-decoration: none;
   color: var(--text);
 }
-.container {
+@media (max-width: 768px) {
+  .app-shell.has-sidebar {
+    flex-direction: column;
+  }
+  .sidebar {
+    position: static;
+    flex: none;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+.page {
+  flex: 1;
+  min-width: 0; /* lets wide tables scroll inside .table-wrap instead of stretching the page */
+  padding: 20px 24px;
+}
+.app-shell:not(.has-sidebar) .page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 16px;
 }
 .page-head {
   display: flex;
@@ -74,8 +153,10 @@ a {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px;
+  display: block;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
 }
 .card.narrow {
   max-width: 380px;
@@ -172,23 +253,40 @@ form.inline {
 }
 .table-wrap {
   overflow-x: auto;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
 }
-th,
-td {
-  text-align: left;
-  padding: 8px 10px;
+.table-wrap .table {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: color-mix(in srgb, var(--accent) 8%, transparent);
+  --bs-table-hover-color: var(--text);
+}
+.table thead th {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
 }
-td.actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+.table tbody td {
+  padding: 10px 14px;
+}
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+td.actions > * {
+  margin-right: 12px;
+  display: inline-block;
+  vertical-align: middle;
+}
+td,
+th {
+  white-space: nowrap;
 }
 .badge {
   padding: 2px 8px;
@@ -220,15 +318,15 @@ td.actions {
 .badge-master {
   color: var(--accent);
 }
-.row {
+.field-row {
   display: flex;
   gap: 8px;
   align-items: center;
 }
-.row input {
+.field-row input {
   flex: 1;
 }
-.row select {
+.field-row select {
   width: auto;
 }
 dl.details {
@@ -327,4 +425,354 @@ dl.details dd {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.page h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+button,
+.button {
+  transition:
+    filter 0.15s ease,
+    transform 0.05s ease;
+}
+button:hover:not(.link):not(:disabled),
+.button:hover {
+  filter: brightness(1.1);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* ---- Visual refresh: depth, colour, motion. Markup is unchanged (tests pin it). ---- */
+:root {
+  --on-accent: #fff;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 12px rgb(16 24 40 / 5%);
+  --shadow-hover: 0 2px 4px rgb(16 24 40 / 8%), 0 10px 24px rgb(16 24 40 / 10%);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --on-accent: #0b1220;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 12px rgb(0 0 0 / 25%);
+    --shadow-hover: 0 2px 4px rgb(0 0 0 / 40%), 0 10px 24px rgb(0 0 0 / 40%);
+  }
+}
+body {
+  background:
+    radial-gradient(
+      900px 400px at 100% -10%,
+      color-mix(in srgb, var(--accent) 10%, transparent),
+      transparent
+    ),
+    var(--bg);
+  background-attachment: fixed;
+}
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.page > * {
+  animation: rise 0.25s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page > * {
+    animation: none;
+  }
+  * {
+    transition: none !important;
+  }
+}
+
+/* Sidebar */
+.sidebar {
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+}
+.sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar .brand::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent);
+}
+.sidebar nav a:hover {
+  transform: translateX(2px);
+}
+.sidebar-user .muted {
+  font-size: 13px;
+}
+
+/* Page header */
+.page h1 {
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+.page > p.muted {
+  margin: 0 0 16px;
+}
+.page h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+/* Cards, tables */
+.card,
+.table-wrap,
+.stat {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.card + .card {
+  margin-top: 16px;
+}
+.table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.table thead th {
+  position: sticky;
+  top: 0;
+}
+.table tbody td {
+  padding: 12px 14px;
+}
+.row-failed td {
+  background: color-mix(in srgb, var(--bad) 9%, transparent);
+}
+.row-failed td:first-child {
+  box-shadow: inset 3px 0 0 var(--bad);
+}
+
+/* Filters: .card sets display:block later in the file and used to win, stacking every field. */
+.filters.card {
+  display: flex;
+  flex-direction: row; /* Bootstrap's .card is a column */
+  flex-wrap: wrap;
+  gap: 14px 16px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.filters select,
+.filters input {
+  min-width: 150px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 14px;
+}
+.filters a {
+  align-self: center;
+  color: var(--muted);
+}
+
+/* Controls */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='date'],
+select {
+  padding: 9px 12px;
+  border-radius: 8px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+input[type='date'] {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  color-scheme: light dark;
+}
+input:hover,
+select:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+button,
+.button {
+  padding: 9px 16px;
+  border-radius: 8px;
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
+}
+button:hover:not(.link):not(:disabled),
+.button:hover {
+  filter: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+  text-decoration: none;
+}
+button.link,
+button.link:hover {
+  background: none;
+  box-shadow: none;
+  transform: none;
+  font-weight: 500;
+}
+button.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Secondary buttons: only the main action stays filled. */
+.range-picker button,
+#monitor-actions button:not([data-action='run']) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+#monitor-actions button[data-action='pause'] {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 40%, transparent);
+}
+#monitor-actions {
+  padding-bottom: 12px;
+}
+#monitor-actions p {
+  margin: 8px 0 0;
+  min-height: 1.5em;
+}
+
+/* Badges: tinted pill with a status dot */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 0;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge-sent {
+  color: var(--ok);
+}
+.badge-retrying,
+.badge-pending {
+  color: var(--warn);
+}
+
+/* Stat cards: coloured accent, lift on hover */
+.stat {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 16px;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.stat::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+}
+.stat:nth-child(2)::before {
+  background: var(--ok);
+}
+.stat:nth-child(3)::before,
+.stat:nth-child(6)::before {
+  background: var(--bad);
+}
+.stat:nth-child(4)::before,
+.stat:nth-child(5)::before {
+  background: var(--warn);
+}
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+.stat-value {
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.stat-link:hover {
+  text-decoration: none;
+}
+
+/* Details, flash, empty state */
+dl.details dt {
+  font-size: 13px;
+}
+.flash {
+  border-left-width: 4px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+.empty {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.card.narrow {
+  margin-top: 12vh;
+  box-shadow: var(--shadow-hover);
+}
+
+.table td:last-child,
+.table th:last-child {
+  padding-right: 20px;
+}
+
+.card.narrow button[type='submit'] {
+  width: 100%;
+  margin-top: 20px;
+}
+.card.narrow h1 {
+  margin-bottom: 8px;
+}
+
+.page-head {
+  margin-bottom: 4px;
+}
+.page-head + .muted {
+  margin: 0 0 16px;
+}
+.page-head + .table-wrap,
+.page-head + .empty {
+  margin-top: 16px;
 }

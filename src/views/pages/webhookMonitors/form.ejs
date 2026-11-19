@@ -36,7 +36,7 @@
   <%- include('../../partials/fieldError', { field: 'sourceCollection' }) %>
 
   <label for="timestampKey">Timestamp key</label>
-  <div class="row">
+  <div class="field-row">
     <input id="timestampKey" name="timestampKey" type="text" maxlength="64" required value="<%= v.timestampKey || '' %>" />
     <button type="button" id="validate-key" data-endpoint="/api/v1/source/validate-timestamp-key">Validate key</button>
   </div>
@@ -44,7 +44,7 @@
   <%- include('../../partials/fieldError', { field: 'timestampKey' }) %>
 
   <label for="checkInterval-value">Check every</label>
-  <div class="row">
+  <div class="field-row">
     <input id="checkInterval-value" name="checkInterval[value]" type="number" min="1" max="10000" required value="<%= ci.value || '' %>" />
     <select name="checkInterval[unit]" aria-label="Check interval unit">
       <% units.interval.forEach(function (u) { %><option value="<%= u %>" <%= ci.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
@@ -54,7 +54,7 @@
   <%- include('../../partials/fieldError', { field: 'checkInterval.unit' }) %>
 
   <label for="threshold-value">Trigger when no document for</label>
-  <div class="row">
+  <div class="field-row">
     <input id="threshold-value" name="threshold[value]" type="number" min="1" max="10000" required value="<%= th.value || '' %>" />
     <select name="threshold[unit]" aria-label="Threshold unit">
       <% units.threshold.forEach(function (u) { %><option value="<%= u %>" <%= th.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
@@ -71,7 +71,7 @@
 
   <div id="repeat-group" data-show-for="REPEAT_EVERY">
     <label for="repeatInterval-value">Repeat interval <small class="muted">(only for "Repeat every N"; not shorter than the check interval)</small></label>
-    <div class="row">
+    <div class="field-row">
       <input id="repeatInterval-value" name="repeatInterval[value]" type="number" min="1" max="10000" value="<%= ri.value || '' %>" />
       <select name="repeatInterval[unit]" aria-label="Repeat interval unit">
         <% units.repeat.forEach(function (u) { %><option value="<%= u %>" <%= ri.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>

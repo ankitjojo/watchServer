@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="<%= locals.csrfToken || '' %>" />
     <title><%= locals.pageTitle ? pageTitle + ' · ' : '' %><%= appName %></title>
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="/public/css/app.css" />
   </head>
   <body>
-    <%- include('../partials/nav') %>
-    <main class="container">
-      <%- include('../partials/flash') %>
-      <%# body is a page template we rendered ourselves (renderPage); it escapes its own values. %>
-      <%- body %>
-    </main>
+    <div class="app-shell<%= locals.currentUser ? ' has-sidebar' : '' %>">
+      <%- include('../partials/nav') %>
+      <main class="page">
+        <%- include('../partials/flash') %>
+        <%# body is a page template we rendered ourselves (renderPage); it escapes its own values. %>
+        <%- body %>
+      </main>
+    </div>
     <script src="/public/js/api.js" defer></script>
     <script src="/public/js/confirm.js" defer></script>
     <% (locals.scripts || []).forEach(function (src) { %>
