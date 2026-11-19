@@ -1,23 +1,93 @@
+<%
+  // Navigation model for the sidebar and the breadcrumb (UI only; routes and roles are enforced on the server).
+  var path = locals.currentPath || '';
+  var isAdmin = !!(locals.currentUser && currentUser.role === 'ADMIN');
+  var isOn = function (href) {
+    return href === '/' ? path === '/' : path === href || path.indexOf(href + '/') === 0;
+  };
+  var navItems = [
+    { label: 'Overview', href: '/', icon: 'ti-layout-dashboard' },
+    {
+      label: 'Monitors',
+      icon: 'ti-activity-heartbeat',
+      children: [
+        { label: 'Webhook monitors', href: '/webhook-monitors', icon: 'ti-webhook' },
+        { label: 'Endpoint monitors', href: '/endpoint-monitors', icon: 'ti-world' },
+      ],
+    },
+    { label: 'Alerts', href: '/alerts', icon: 'ti-bell' },
+  ];
+  if (isAdmin) {
+    navItems.push({
+      label: 'Administration',
+      icon: 'ti-settings',
+      children: [
+        { label: 'Recipients', href: '/recipients', icon: 'ti-mail' },
+        { label: 'Users', href: '/users', icon: 'ti-users' },
+      ],
+    });
+  }
+  var crumbs = [];
+  navItems.forEach(function (item) {
+    (item.children || [item]).forEach(function (leaf) {
+      if (crumbs.length === 0 && isOn(leaf.href)) {
+        if (item.children) crumbs.push({ label: item.label });
+        crumbs.push({ label: leaf.label, href: leaf.href });
+      }
+    });
+  });
+  if (locals.pageTitle && (crumbs.length === 0 || crumbs[crumbs.length - 1].label !== pageTitle)) {
+    crumbs.push({ label: pageTitle });
+  }
+%>
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content="<%= locals.csrfToken || '' %>" />
-    <title><%= locals.pageTitle ? pageTitle + ' · ' : '' %>payMonitor</title>
-    <link rel="stylesheet" href="/public/css/app.css" />
+    <%- include('../partials/head') %>
   </head>
+<% if (locals.currentUser) { %>
   <body>
-    <%- include('../partials/nav') %>
-    <main class="container">
-      <%- include('../partials/flash') %>
-      <%# body is a page template we rendered ourselves (renderPage); it escapes its own values. %>
-      <%- body %>
-    </main>
-    <script src="/public/js/api.js" defer></script>
-    <script src="/public/js/confirm.js" defer></script>
-    <% (locals.scripts || []).forEach(function (src) { %>
-    <script src="<%= src %>" defer></script>
-    <% }) %>
+    <a class="visually-hidden-focusable" href="#main-content">Skip to content</a>
+    <div class="page">
+      <%- include('../partials/sidebar', { navItems: navItems, isOn: isOn }) %>
+      <%- include('../partials/header') %>
+      <div class="page-wrapper">
+        <main class="page-body" id="main-content">
+          <div class="container-xl">
+            <% if (crumbs.length > 1) { %>
+            <ol class="breadcrumb breadcrumb-arrows mb-3" aria-label="Breadcrumb">
+              <% crumbs.forEach(function (c, i) { %>
+              <li class="breadcrumb-item<%= i === crumbs.length - 1 ? ' active' : '' %>"<%- i === crumbs.length - 1 ? ' aria-current="page"' : '' %>>
+                <% if (c.href && i < crumbs.length - 1) { %><a href="<%= c.href %>"><%= c.label %></a><% } else { %><%= c.label %><% } %>
+              </li>
+              <% }) %>
+            </ol>
+            <% } %>
+            <%- include('../partials/flash') %>
+            <%# body is a page template we rendered ourselves (renderPage); it escapes its own values. %>
+            <%- body %>
+          </div>
+        </main>
+        <%- include('../partials/footer') %>
+      </div>
+    </div>
+    <%- include('../partials/confirmModal') %>
+    <%- include('../partials/scripts') %>
   </body>
+<% } else { %>
+  <body class="d-flex flex-column">
+    <main class="page page-center" id="main-content">
+      <div class="container container-tight py-4">
+        <div class="text-center mb-4">
+          <a href="/" class="navbar-brand fs-2 fw-bold text-reset text-decoration-none">
+            <i class="ti ti-activity-heartbeat text-primary me-1" aria-hidden="true"></i>payMonitor
+          </a>
+        </div>
+        <%- include('../partials/flash') %>
+        <%- body %>
+      </div>
+    </main>
+    <%- include('../partials/scripts') %>
+  </body>
+<% } %>
 </html>

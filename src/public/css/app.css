@@ -1,330 +1,121 @@
+/*
+ * payMonitor additions on top of Tabler (TD-34). Tabler/Bootstrap does the layout and components;
+ * this file only keeps the few payMonitor-specific hooks. No inline styles anywhere (CSP style-src 'self').
+ */
+
+/* Colours read by charts.js through getComputedStyle. They follow Tabler's tokens, so dark mode works. */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --text: #1c2430;
-  --muted: #5d6b7e;
-  --border: #d9dee6;
-  --accent: #1f5fd1;
-  --ok: #1a7f37;
-  --warn: #9a6700;
-  --bad: #b42318;
+  --accent: var(--tblr-primary);
+  --bad: var(--tblr-danger);
+  --muted: var(--tblr-secondary);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #12161c;
-    --surface: #1b212a;
-    --text: #e6eaf0;
-    --muted: #9aa7b8;
-    --border: #2d3644;
-    --accent: #6ea0ff;
-    --ok: #4cc26b;
-    --warn: #e3b341;
-    --bad: #ff7b72;
-  }
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-  font:
-    15px/1.5 system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-a {
-  color: var(--accent);
-}
-.topbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  align-items: center;
-  padding: 10px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-.topbar nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  flex: 1;
-}
-.brand {
-  font-weight: 700;
-  text-decoration: none;
-  color: var(--text);
-}
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-}
-.page-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-}
-.card.narrow {
-  max-width: 380px;
-  margin: 40px auto;
-}
-label {
-  display: block;
-  margin: 12px 0 4px;
-  font-weight: 600;
-}
-label.checkbox {
-  font-weight: 400;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-input[type='text'],
-input[type='email'],
-input[type='password'],
-input[type='number'],
-select {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-}
-button,
-.button {
-  display: inline-block;
-  padding: 8px 14px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
-  font: inherit;
-  cursor: pointer;
-  text-decoration: none;
-}
-button.link {
-  background: none;
-  color: var(--accent);
-  padding: 0;
-}
-button.link.danger {
-  color: var(--bad);
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-form.inline {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  margin: 0;
-}
-.form-actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-top: 16px;
-}
+
+/* Text helpers set by the page scripts (monitorActions.js, alertActions.js, monitorForm.js). */
 .muted {
-  color: var(--muted);
+  color: var(--tblr-secondary);
 }
 .field-error {
-  color: var(--bad);
-  display: block;
-  font-size: 13px;
-  margin-top: 4px;
-}
-.flash {
-  padding: 10px 12px;
-  border-radius: 6px;
-  margin: 8px 0;
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-.flash-success {
-  border-color: var(--ok);
-}
-.flash-warning {
-  border-color: var(--warn);
-}
-.flash-error {
-  border-color: var(--bad);
-}
-.table-wrap {
-  overflow-x: auto;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-}
-th,
-td {
-  text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-td.actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid currentColor;
-}
-.badge-ok {
-  color: var(--ok);
-}
-.badge-stale,
-.badge-no-data,
-.badge-paused,
-.badge-pending-first-check {
-  color: var(--warn);
-}
-.badge-down,
-.badge-error,
-.badge-failed {
-  color: var(--bad);
-}
-.empty {
-  padding: 32px;
-  text-align: center;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-}
-.badge-master {
-  color: var(--accent);
-}
-.row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.row input {
-  flex: 1;
-}
-.row select {
-  width: auto;
-}
-dl.details {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 6px 24px;
-  margin: 0;
-}
-dl.details dt {
-  color: var(--muted);
-}
-dl.details dd {
-  margin: 0;
-}
-.actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-[hidden] {
-  display: none !important;
-}
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
-  margin: 16px 0;
-}
-.stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-}
-.stat-value {
-  font-size: 26px;
-  font-weight: 700;
-}
-.stat-label {
-  color: var(--muted);
-  font-size: 13px;
-}
-.stat-link {
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-}
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-  margin-bottom: 12px;
-}
-.filters label {
-  margin: 0;
-  font-weight: 400;
-  font-size: 13px;
-}
-.filters select,
-.filters input {
-  width: auto;
-}
-.row-failed td {
-  background: color-mix(in srgb, var(--bad) 10%, transparent);
-}
-.card + .card {
-  margin-top: 16px;
-}
-.pagination {
-  text-align: right;
-}
-.inline-label {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  margin: 0;
-  font-weight: 400;
-}
-.range-picker {
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-#chart-root {
-  position: relative;
-  max-width: 100%;
+  color: var(--tblr-danger);
 }
 .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  border: 0;
+}
+
+/* Overview stat cards: number above label. */
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tblr-body-color);
+}
+.stat-label {
+  display: block;
+  color: var(--tblr-secondary);
+  font-size: 0.8125rem;
+}
+.stat-link {
+  color: inherit;
+  text-decoration: none;
+}
+.stat-link:hover .stat-value,
+.stat-link:focus-visible .stat-value {
+  color: var(--tblr-primary);
+}
+
+/* Card headings keep plain <h2> (tests and screen readers rely on them); size them like card titles. */
+.card-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* A FAILED email row is highlighted (FR-A2): colour plus the status badge text. */
+.table tr.row-failed > td {
+  background-color: var(--tblr-danger-lt);
+}
+.table tr.row-failed > td:first-child {
+  box-shadow: inset 3px 0 0 var(--tblr-danger);
+}
+
+/* Master recipient badge. */
+.badge-master {
+  background-color: var(--tblr-purple-lt);
+  color: var(--tblr-purple);
+}
+
+/* Sortable column headers (ui.js). */
+.table-sort {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.table-sort::after {
+  content: '\2195';
+  opacity: 0.35;
+  font-size: 0.75em;
+}
+.table-sort.asc::after {
+  content: '\2191';
+  opacity: 1;
+}
+.table-sort.desc::after {
+  content: '\2193';
+  opacity: 1;
+}
+.table-sort:focus-visible {
+  outline: 2px solid var(--tblr-primary);
+  outline-offset: 2px;
+}
+
+/* Long values (URLs, errors, recipients) wrap instead of widening the table. */
+.text-break-all {
+  word-break: break-all;
+}
+
+/* Chart area keeps a stable height so the page does not jump while data loads. */
+#chart-root {
+  position: relative;
+  min-height: 18rem;
+}
+
+/* The repeat-interval group is toggled with the hidden attribute (monitorForm.js). */
+[hidden] {
+  display: none !important;
+}
+
+/* Inline action forms (delete inside a dropdown or a button row) must not add spacing. */
+form.inline {
+  display: inline;
+  margin: 0;
 }

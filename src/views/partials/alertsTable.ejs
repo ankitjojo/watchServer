@@ -1,8 +1,8 @@
 <% if (rows.length === 0) { %>
-<p class="muted"><%= locals.emptyText || 'No alerts yet.' %></p>
+<div class="card-body"><p class="text-secondary m-0"><%= locals.emptyText || 'No alerts yet.' %></p></div>
 <% } else { %>
-<div class="table-wrap">
-  <table>
+<div class="table-responsive table-wrap">
+  <table class="table table-vcenter card-table">
     <thead>
       <tr>
         <th scope="col">Created</th><th scope="col">Type</th>
@@ -13,17 +13,17 @@
     <tbody>
       <% rows.forEach(function (a) { %>
       <tr class="<%= a.isFailed ? 'row-failed' : '' %>">
-        <td><%= a.created %></td>
+        <td class="text-nowrap text-secondary"><%= a.created %></td>
         <td><%= a.type %></td>
         <% if (locals.showMonitor) { %><td><%= a.monitor %></td><% } %>
         <td><%- include('./statusBadge', { status: a.status, label: a.statusLabel }) %></td>
-        <td title="<%= a.recipients %>"><%= a.recipientCount %></td>
-        <td><%= a.sent %></td>
-        <td><%= a.error %></td>
-        <td>
+        <td title="<%= a.recipients %>"><span class="badge bg-secondary-lt"><i class="ti ti-users me-1" aria-hidden="true"></i><%= a.recipientCount %></span></td>
+        <td class="text-nowrap text-secondary"><%= a.sent %></td>
+        <td class="text-danger small"><%= a.error %></td>
+        <td class="text-end">
           <% if (a.canResend) { %>
-          <button type="button" class="link" data-resend="<%= a.id %>">Resend</button>
-          <output class="muted" data-resend-result="<%= a.id %>" aria-live="polite"></output>
+          <button type="button" class="btn btn-sm btn-outline-danger" data-resend="<%= a.id %>"><i class="ti ti-send me-1" aria-hidden="true"></i>Resend</button>
+          <output class="muted small d-block" data-resend-result="<%= a.id %>" aria-live="polite"></output>
           <% } %>
         </td>
       </tr>

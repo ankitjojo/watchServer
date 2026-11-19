@@ -1,1 +1,11 @@
-<span class="badge badge-<%= String(status).toLowerCase().replace(/_/g, '-') %>"><%= label || String(status).replace(/_/g, ' ') %></span>
+<%
+  var tone = {
+    OK: 'success', SENT: 'success',
+    STALE: 'warning', RETRYING: 'warning',
+    NO_DATA: 'orange',
+    DOWN: 'danger', ERROR: 'danger', FAILED: 'danger',
+    PENDING: 'info',
+    PAUSED: 'secondary', PENDING_FIRST_CHECK: 'secondary',
+  }[String(status)] || 'secondary';
+%>
+<span class="badge bg-<%= tone %>-lt badge-<%= String(status).toLowerCase().replace(/_/g, '-') %>"><%= label || String(status).replace(/_/g, ' ') %></span>

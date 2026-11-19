@@ -1,37 +1,62 @@
-<div class="page-head">
-  <h1>Endpoint monitors</h1>
-  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %><a class="button" href="/endpoint-monitors/new">New endpoint monitor</a><% } %>
+<% var isAdmin = !!(locals.currentUser && currentUser.role === 'ADMIN'); %>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <div class="page-pretitle">Monitors</div>
+      <h1 class="page-title">Endpoint monitors</h1>
+      <div class="text-secondary mt-1">Each monitor sends an HTTP GET and expects status 200. It is down only when every attempt fails.</div>
+    </div>
+    <% if (isAdmin) { %>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-primary" href="/endpoint-monitors/new"><i class="ti ti-plus me-1" aria-hidden="true"></i>New endpoint monitor</a>
+    </div>
+    <% } %>
+  </div>
 </div>
-<p class="muted">Each monitor sends an HTTP GET and expects status 200. It is down only when every attempt fails.</p>
+
+<div class="card">
 <% if (rows.length === 0) { %>
-  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %>
-<%- include('../../partials/emptyState', { message: 'No endpoint monitors yet.', actionHref: '/endpoint-monitors/new', actionLabel: 'Create the first one' }) %>
+  <div class="card-body">
+  <% if (isAdmin) { %>
+    <%- include('../../partials/emptyState', { message: 'No endpoint monitors yet.', actionHref: '/endpoint-monitors/new', actionLabel: 'Create the first one', icon: 'ti-world' }) %>
   <% } else { %>
-<%- include('../../partials/emptyState', { message: 'No endpoint monitors have been set up yet. An admin can create them.' }) %>
+    <%- include('../../partials/emptyState', { message: 'No endpoint monitors have been set up yet. An admin can create them.', icon: 'ti-world' }) %>
   <% } %>
+  </div>
 <% } else { %>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th scope="col">Server</th><th scope="col">URL</th><th scope="col">Status</th><th scope="col">Check</th>
-        <th scope="col">Retries</th><th scope="col">Last check</th><th scope="col">Next check</th><th scope="col">Last response</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% rows.forEach(function (m) { %>
-      <tr>
-        <td><a href="/endpoint-monitors/<%= m.id %>"><%= m.serverName %></a></td>
-        <td><%= m.url %></td>
-        <td><%- include('../../partials/statusBadge', { status: m.status, label: m.statusLabel }) %></td>
-        <td><%= m.checkEvery %></td>
-        <td><%= m.retryCount %></td>
-        <td><%= m.lastCheck %></td>
-        <td><%= m.nextCheck %></td>
-        <td><%= m.lastResponse %></td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
+  <div class="card-header">
+    <h2><%= rows.length %> monitor<%= rows.length === 1 ? '' : 's' %></h2>
+    <div class="card-actions">
+      <div class="input-icon">
+        <span class="input-icon-addon"><i class="ti ti-search" aria-hidden="true"></i></span>
+        <input type="search" class="form-control form-control-sm" placeholder="Search…" aria-label="Search endpoint monitors" data-table-search="endpoint-monitors" />
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive table-wrap">
+    <table class="table table-vcenter card-table" id="endpoint-monitors" data-table-tools>
+      <thead>
+        <tr>
+          <th scope="col" data-sortable>Server</th><th scope="col" data-sortable>URL</th><th scope="col" data-sortable>Status</th><th scope="col">Check</th>
+          <th scope="col" data-sortable>Retries</th><th scope="col" data-sortable>Last check</th><th scope="col" data-sortable>Next check</th><th scope="col">Last response</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(function (m) { %>
+        <tr>
+          <td><a href="/endpoint-monitors/<%= m.id %>" class="fw-semibold"><%= m.serverName %></a></td>
+          <td class="text-secondary text-break-all"><%= m.url %></td>
+          <td><%- include('../../partials/statusBadge', { status: m.status, label: m.statusLabel }) %></td>
+          <td class="text-secondary"><%= m.checkEvery %></td>
+          <td><%= m.retryCount %></td>
+          <td class="text-secondary"><%= m.lastCheck %></td>
+          <td class="text-secondary"><%= m.nextCheck %></td>
+          <td><%= m.lastResponse %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <p class="card-body text-secondary m-0" data-table-empty="endpoint-monitors" hidden>No monitors match your search.</p>
 <% } %>
+</div>

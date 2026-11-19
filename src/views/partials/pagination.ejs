@@ -1,3 +1,5 @@
 <% if (locals.olderHref) { %>
-<p class="pagination"><a href="<%= olderHref %>" rel="next">Older &rsaquo;</a></p>
+<div class="card-footer d-flex align-items-center justify-content-end pagination">
+  <a class="btn btn-outline-secondary btn-sm" href="<%= olderHref %>" rel="next">Older <i class="ti ti-chevron-right ms-1" aria-hidden="true"></i></a>
+</div>
 <% } %>

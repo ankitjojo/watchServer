@@ -1,56 +1,42 @@
-<div class="page-head">
-  <h1><%= monitor.name %></h1>
-  <div class="actions">
-    <%- include('../../partials/statusBadge', { status: monitor.status, label: monitor.statusLabel }) %>
-    <% if (can.edit) { %>
-    <a class="button" href="/webhook-monitors/<%= monitor.id %>/edit">Edit</a>
-    <form class="inline" method="post" action="/webhook-monitors/<%= monitor.id %>/delete" data-confirm="Delete monitor <%= monitor.name %>? Its history is kept.">
-      <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
-      <button type="submit" class="link danger">Delete</button>
-    </form>
-    <% } %>
-  </div>
-</div>
+<%- include('../../partials/monitorHeader', { title: monitor.name, pretitle: 'Webhook monitor', status: monitor.status, statusLabel: monitor.statusLabel, base: '/webhook-monitors', monitorId: monitor.id, canEdit: can.edit }) %>
 
 <% if (monitor.hasIndexWarning) { %>
-<div class="flash flash-warning" role="status">
-  No index starts with <strong><%= monitor.timestampKey %></strong> on <strong><%= monitor.collection %></strong> (checked when saved), so every check scans the collection. Ask the source backend owners to add one; payMonitor cannot create it.
+<div class="alert alert-warning flash flash-warning" role="status">
+  <div class="d-flex">
+    <i class="ti ti-alert-triangle alert-icon" aria-hidden="true"></i>
+    <div>No index starts with <strong><%= monitor.timestampKey %></strong> on <strong><%= monitor.collection %></strong> (checked when saved), so every check scans the collection. Ask the source backend owners to add one; payMonitor cannot create it.</div>
+  </div>
 </div>
 <% } %>
 
-<% if (can.edit) { %>
-<section class="card" id="monitor-actions" data-monitor-type="webhook" data-monitor-id="<%= monitor.id %>">
-  <h2>Actions</h2>
-  <div class="actions">
-    <button type="button" data-action="run">Run check now</button>
-    <% if (monitor.isEnabled) { %>
-    <button type="button" data-action="pause">Pause</button>
-    <% } else { %>
-    <button type="button" data-action="resume">Resume</button>
-    <% } %>
-    <button type="button" data-action="test-email">Send test email</button>
+<div class="row row-cards mb-3">
+  <div class="col-lg-<%= can.edit ? '7' : '12' %>">
+    <section class="card h-100">
+      <div class="card-header"><h2>Configuration</h2></div>
+      <div class="card-body">
+        <%- include('../../partials/datagrid', { items: [
+          { title: 'Payment gateway', value: monitor.gatewayName },
+          { title: 'Collection', value: monitor.collection },
+          { title: 'Timestamp key', value: monitor.timestampKey },
+          { title: 'Check', value: monitor.checkEvery },
+          { title: 'Alert when no document for', value: monitor.threshold },
+          { title: 'Alert mode', value: monitor.alertMode },
+          { title: 'Repeat every', value: monitor.repeatEvery },
+          { title: 'Enabled', value: monitor.isEnabled ? 'Yes' : 'No (paused)' },
+          { title: 'Last check', value: monitor.lastCheck },
+          { title: 'Next check', value: monitor.nextCheck },
+          { title: 'Last document age', value: monitor.lastAge },
+          { title: 'Created', value: monitor.created },
+          { title: 'Updated', value: monitor.updated },
+        ] }) %>
+      </div>
+    </section>
   </div>
-  <p><output class="muted" data-result aria-live="polite"></output></p>
-</section>
-<% } %>
-
-<section class="card">
-  <h2>Configuration</h2>
-  <dl class="details">
-    <dt>Payment gateway</dt><dd><%= monitor.gatewayName %></dd>
-    <dt>Collection</dt><dd><%= monitor.collection %></dd>
-    <dt>Timestamp key</dt><dd><%= monitor.timestampKey %></dd>
-    <dt>Check</dt><dd><%= monitor.checkEvery %></dd>
-    <dt>Alert when no document for</dt><dd><%= monitor.threshold %></dd>
-    <dt>Alert mode</dt><dd><%= monitor.alertMode %></dd>
-    <dt>Repeat every</dt><dd><%= monitor.repeatEvery %></dd>
-    <dt>Enabled</dt><dd><%= monitor.isEnabled ? 'Yes' : 'No (paused)' %></dd>
-    <dt>Last check</dt><dd><%= monitor.lastCheck %></dd>
-    <dt>Next check</dt><dd><%= monitor.nextCheck %></dd>
-    <dt>Last document age</dt><dd><%= monitor.lastAge %></dd>
-    <dt>Created</dt><dd><%= monitor.created %></dd>
-    <dt>Updated</dt><dd><%= monitor.updated %></dd>
-  </dl>
-</section>
+  <% if (can.edit) { %>
+  <div class="col-lg-5">
+    <%- include('../../partials/monitorActionsPanel', { type: 'webhook', monitorId: monitor.id, isEnabled: monitor.isEnabled }) %>
+  </div>
+  <% } %>
+</div>
 
 <%- include('../../partials/monitorExtras', { extras: extras }) %>

@@ -1,0 +1,9 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="csrf-token" content="<%= locals.csrfToken || '' %>" />
+<title><%= locals.pageTitle ? pageTitle + ' · ' : '' %>payMonitor</title>
+<%# Applies the saved light/dark choice before first paint (external file: CSP script-src 'self'). %>
+<script src="/vendor/tabler/js/tabler-theme.min.js"></script>
+<link rel="stylesheet" href="/vendor/tabler/css/tabler.min.css" />
+<link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css" />
+<link rel="stylesheet" href="/public/css/app.css" />

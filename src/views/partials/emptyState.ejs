@@ -1,4 +1,9 @@
 <div class="empty">
-  <p><%= message %></p>
-  <% if (locals.actionHref) { %><a class="button" href="<%= actionHref %>"><%= actionLabel %></a><% } %>
+  <div class="empty-icon"><i class="ti <%= locals.icon || 'ti-inbox' %>" aria-hidden="true"></i></div>
+  <p class="empty-title"><%= message %></p>
+  <% if (locals.actionHref) { %>
+  <div class="empty-action">
+    <a class="btn btn-primary" href="<%= actionHref %>"><i class="ti ti-plus me-1" aria-hidden="true"></i><%= actionLabel %></a>
+  </div>
+  <% } %>
 </div>

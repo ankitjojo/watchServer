@@ -1,0 +1,27 @@
+<%# Title row of a monitor detail page. Inputs: title, pretitle, status, statusLabel, base (URL prefix), monitorId, canEdit. %>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <div class="page-pretitle"><%= pretitle %></div>
+      <h1 class="page-title d-flex align-items-center gap-2 flex-wrap">
+        <%= title %> <%- include('./statusBadge', { status: status, label: statusLabel }) %>
+      </h1>
+    </div>
+    <% if (canEdit) { %>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-outline-primary" href="<%= base %>/<%= monitorId %>/edit"><i class="ti ti-pencil me-1" aria-hidden="true"></i>Edit</a>
+        <div class="dropdown">
+          <button type="button" class="btn btn-icon" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions"><i class="ti ti-dots-vertical" aria-hidden="true"></i></button>
+          <div class="dropdown-menu dropdown-menu-end">
+            <form class="inline" method="post" action="<%= base %>/<%= monitorId %>/delete" data-confirm="Delete monitor <%= title %>? Its history is kept.">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+              <button type="submit" class="dropdown-item text-danger"><i class="ti ti-trash me-2" aria-hidden="true"></i>Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>

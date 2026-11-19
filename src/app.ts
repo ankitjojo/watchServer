@@ -87,7 +87,7 @@ export function createApp(deps: AppDeps): Express {
     pinoHttp({
       logger,
       genReqId: (req) => (req as express.Request).requestId,
-      autoLogging: { ignore: (req) => req.url.startsWith('/public') },
+      autoLogging: { ignore: (req) => req.url.startsWith('/public') || req.url.startsWith('/vendor/') },
       serializers: {
         req: (req: { id: string; method: string; url: string }) => ({
           id: req.id,
@@ -129,6 +129,12 @@ export function createApp(deps: AppDeps): Express {
   // src/ and dist/ both sit one level below the project root, where node_modules lives.
   const chartDist = path.resolve(SRC_DIR, '..', 'node_modules', 'chart.js', 'dist');
   app.use('/vendor/chart.js', express.static(chartDist, staticOptions));
+  // Tabler UI (TD-34): only the CSS/JS folders and the icon font, served locally so CSP stays 'self'.
+  const tablerDist = path.resolve(SRC_DIR, '..', 'node_modules', '@tabler', 'core', 'dist');
+  app.use('/vendor/tabler/css', express.static(path.join(tablerDist, 'css'), staticOptions));
+  app.use('/vendor/tabler/js', express.static(path.join(tablerDist, 'js'), staticOptions));
+  const tablerIcons = path.resolve(SRC_DIR, '..', 'node_modules', '@tabler', 'icons-webfont', 'dist');
+  app.use('/vendor/tabler-icons', express.static(tablerIcons, staticOptions));
 
   app.use(
     session({
@@ -153,6 +159,8 @@ export function createApp(deps: AppDeps): Express {
   app.use(createLoadCurrentUser((id) => deps.auth.resolveSessionUser(id)));
   app.use((req, res, next) => {
     res.locals.flash = consumeFlash(req);
+    // Layout only: which sidebar item is active and the breadcrumb (no routing logic depends on it).
+    res.locals.currentPath = req.path;
     next();
   });
 

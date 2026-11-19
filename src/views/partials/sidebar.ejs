@@ -1,0 +1,60 @@
+<%
+  var initials = String(currentUser.name || currentUser.email || '?').trim().split(/\s+/).map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase();
+%>
+<aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark" aria-label="Main navigation">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="navbar-brand navbar-brand-autodark">
+      <a href="/" class="text-reset text-decoration-none fw-bold">
+        <i class="ti ti-activity-heartbeat text-primary me-1" aria-hidden="true"></i>payMonitor
+      </a>
+    </div>
+    <%# On small screens the user menu and theme toggle live here (the top header is hidden). %>
+    <div class="navbar-nav flex-row d-lg-none">
+      <div class="nav-item">
+        <button type="button" class="nav-link px-2" data-theme-toggle aria-label="Toggle light or dark theme">
+          <i class="ti ti-moon hide-theme-dark" aria-hidden="true"></i><i class="ti ti-sun hide-theme-light" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="nav-item dropdown">
+        <button type="button" class="nav-link d-flex lh-1 p-0 px-2 border-0 bg-transparent" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
+          <span class="avatar avatar-sm"><%= initials %></span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+          <%- include('./userMenu') %>
+        </div>
+      </div>
+    </div>
+    <div class="collapse navbar-collapse" id="sidebar-menu">
+      <ul class="navbar-nav pt-lg-3">
+        <% navItems.forEach(function (item, index) { %>
+          <% if (item.children) { %>
+            <% var open = item.children.some(function (c) { return isOn(c.href); }); %>
+        <li class="nav-item dropdown<%= open ? ' active' : '' %>">
+          <a class="nav-link dropdown-toggle<%= open ? ' show' : '' %>" href="#nav-group-<%= index %>" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="<%= open ? 'true' : 'false' %>">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti <%= item.icon %>" aria-hidden="true"></i></span>
+            <span class="nav-link-title"><%= item.label %></span>
+          </a>
+          <div class="dropdown-menu<%= open ? ' show' : '' %>" id="nav-group-<%= index %>">
+            <% item.children.forEach(function (child) { %>
+            <a class="dropdown-item<%= isOn(child.href) ? ' active' : '' %>" href="<%= child.href %>"<%- isOn(child.href) ? ' aria-current="page"' : '' %>>
+              <i class="ti <%= child.icon %> me-2" aria-hidden="true"></i><%= child.label %>
+            </a>
+            <% }) %>
+          </div>
+        </li>
+          <% } else { %>
+        <li class="nav-item<%= isOn(item.href) ? ' active' : '' %>">
+          <a class="nav-link" href="<%= item.href %>"<%- isOn(item.href) ? ' aria-current="page"' : '' %>>
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti <%= item.icon %>" aria-hidden="true"></i></span>
+            <span class="nav-link-title"><%= item.label %></span>
+          </a>
+        </li>
+          <% } %>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+</aside>

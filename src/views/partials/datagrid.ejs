@@ -1,0 +1,9 @@
+<%# items: [{ title, value }]. Values are escaped. %>
+<div class="datagrid">
+  <% items.forEach(function (item) { %>
+  <div class="datagrid-item">
+    <div class="datagrid-title"><%= item.title %></div>
+    <div class="datagrid-content text-break-all"><%= item.value %></div>
+  </div>
+  <% }) %>
+</div>

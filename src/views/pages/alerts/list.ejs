@@ -1,30 +1,50 @@
-<h1>Alerts</h1>
-<p class="muted">Every alert is stored before its email is sent. Failed emails are highlighted; admins can resend them.</p>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <h1 class="page-title">Alerts</h1>
+      <div class="text-secondary mt-1">Every alert is stored before its email is sent. Failed emails are highlighted; admins can resend them.</div>
+    </div>
+  </div>
+</div>
 
-<form method="get" class="filters card">
-  <label>Monitor
-    <select name="monitorId">
-      <option value="">All</option>
-      <% options.monitors.forEach(function (m) { %><option value="<%= m.id %>" <%= filters.monitorId === m.id ? 'selected' : '' %>><%= m.name %></option><% }) %>
-    </select>
-  </label>
-  <label>Type
-    <select name="type">
-      <option value="">All</option>
-      <% options.types.forEach(function (t) { %><option value="<%= t %>" <%= filters.type === t ? 'selected' : '' %>><%= t %></option><% }) %>
-    </select>
-  </label>
-  <label>Email status
-    <select name="status">
-      <option value="">All</option>
-      <% options.statuses.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }) %>
-    </select>
-  </label>
-  <label>From (UTC) <input type="date" name="from" value="<%= filters.from %>" /></label>
-  <label>To (UTC) <input type="date" name="to" value="<%= filters.to %>" /></label>
-  <button type="submit">Filter</button>
-  <a href="/alerts">Clear</a>
-</form>
-
-<%- include('../../partials/alertsTable', { rows: rows, showMonitor: true, emptyText: 'No alerts match.' }) %>
-<%- include('../../partials/pagination', { olderHref: locals.olderHref }) %>
+<div class="card">
+  <div class="card-body border-bottom py-3">
+    <form method="get" class="row g-2 align-items-end filters">
+      <div class="col-sm-6 col-lg">
+        <label class="form-label" for="filter-monitor">Monitor</label>
+        <select class="form-select" name="monitorId" id="filter-monitor">
+          <option value="">All</option>
+          <% options.monitors.forEach(function (m) { %><option value="<%= m.id %>" <%= filters.monitorId === m.id ? 'selected' : '' %>><%= m.name %></option><% }) %>
+        </select>
+      </div>
+      <div class="col-sm-6 col-lg">
+        <label class="form-label" for="filter-type">Type</label>
+        <select class="form-select" name="type" id="filter-type">
+          <option value="">All</option>
+          <% options.types.forEach(function (t) { %><option value="<%= t %>" <%= filters.type === t ? 'selected' : '' %>><%= t %></option><% }) %>
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg">
+        <label class="form-label" for="filter-status">Email status</label>
+        <select class="form-select" name="status" id="filter-status">
+          <option value="">All</option>
+          <% options.statuses.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }) %>
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg">
+        <label class="form-label" for="filter-from">From (UTC)</label>
+        <input class="form-control" type="date" name="from" id="filter-from" value="<%= filters.from %>" />
+      </div>
+      <div class="col-sm-4 col-lg">
+        <label class="form-label" for="filter-to">To (UTC)</label>
+        <input class="form-control" type="date" name="to" id="filter-to" value="<%= filters.to %>" />
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary"><i class="ti ti-filter me-1" aria-hidden="true"></i>Filter</button>
+        <a href="/alerts" class="btn btn-link">Clear</a>
+      </div>
+    </form>
+  </div>
+  <%- include('../../partials/alertsTable', { rows: rows, showMonitor: true, emptyText: 'No alerts match.' }) %>
+  <%- include('../../partials/pagination', { olderHref: locals.olderHref }) %>
+</div>

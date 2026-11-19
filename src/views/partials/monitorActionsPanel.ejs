@@ -1,0 +1,16 @@
+<%# Admin actions (FR-D3). monitorActions.js reads data-monitor-type/id and the data-action buttons. %>
+<section class="card mb-3" id="monitor-actions" data-monitor-type="<%= type %>" data-monitor-id="<%= monitorId %>">
+  <div class="card-header"><h2>Actions</h2></div>
+  <div class="card-body">
+    <div class="btn-list">
+      <button type="button" class="btn btn-primary" data-action="run"><i class="ti ti-refresh me-1" aria-hidden="true"></i>Run check now</button>
+      <% if (isEnabled) { %>
+      <button type="button" class="btn" data-action="pause"><i class="ti ti-player-pause me-1" aria-hidden="true"></i>Pause</button>
+      <% } else { %>
+      <button type="button" class="btn btn-success" data-action="resume"><i class="ti ti-player-play me-1" aria-hidden="true"></i>Resume</button>
+      <% } %>
+      <button type="button" class="btn" data-action="test-email"><i class="ti ti-send me-1" aria-hidden="true"></i>Send test email</button>
+    </div>
+    <p class="mt-3 mb-0"><output class="muted" data-result aria-live="polite"></output></p>
+  </div>
+</section>

@@ -1,48 +1,31 @@
-<div class="page-head">
-  <h1><%= monitor.serverName %></h1>
-  <div class="actions">
-    <%- include('../../partials/statusBadge', { status: monitor.status, label: monitor.statusLabel }) %>
-    <% if (can.edit) { %>
-    <a class="button" href="/endpoint-monitors/<%= monitor.id %>/edit">Edit</a>
-    <form class="inline" method="post" action="/endpoint-monitors/<%= monitor.id %>/delete" data-confirm="Delete monitor <%= monitor.serverName %>? Its history is kept.">
-      <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
-      <button type="submit" class="link danger">Delete</button>
-    </form>
-    <% } %>
+<%- include('../../partials/monitorHeader', { title: monitor.serverName, pretitle: 'Endpoint monitor', status: monitor.status, statusLabel: monitor.statusLabel, base: '/endpoint-monitors', monitorId: monitor.id, canEdit: can.edit }) %>
+
+<div class="row row-cards mb-3">
+  <div class="col-lg-<%= can.edit ? '7' : '12' %>">
+    <section class="card h-100">
+      <div class="card-header"><h2>Configuration</h2></div>
+      <div class="card-body">
+        <%- include('../../partials/datagrid', { items: [
+          { title: 'Endpoint URL', value: monitor.url },
+          { title: 'Check', value: monitor.checkEvery },
+          { title: 'Retry count', value: monitor.retryCount },
+          { title: 'Alert mode', value: monitor.alertMode },
+          { title: 'Repeat every', value: monitor.repeatEvery },
+          { title: 'Enabled', value: monitor.isEnabled ? 'Yes' : 'No (paused)' },
+          { title: 'Last check', value: monitor.lastCheck },
+          { title: 'Next check', value: monitor.nextCheck },
+          { title: 'Last response time', value: monitor.lastResponse },
+          { title: 'Created', value: monitor.created },
+          { title: 'Updated', value: monitor.updated },
+        ] }) %>
+      </div>
+    </section>
   </div>
+  <% if (can.edit) { %>
+  <div class="col-lg-5">
+    <%- include('../../partials/monitorActionsPanel', { type: 'endpoint', monitorId: monitor.id, isEnabled: monitor.isEnabled }) %>
+  </div>
+  <% } %>
 </div>
-
-<% if (can.edit) { %>
-<section class="card" id="monitor-actions" data-monitor-type="endpoint" data-monitor-id="<%= monitor.id %>">
-  <h2>Actions</h2>
-  <div class="actions">
-    <button type="button" data-action="run">Run check now</button>
-    <% if (monitor.isEnabled) { %>
-    <button type="button" data-action="pause">Pause</button>
-    <% } else { %>
-    <button type="button" data-action="resume">Resume</button>
-    <% } %>
-    <button type="button" data-action="test-email">Send test email</button>
-  </div>
-  <p><output class="muted" data-result aria-live="polite"></output></p>
-</section>
-<% } %>
-
-<section class="card">
-  <h2>Configuration</h2>
-  <dl class="details">
-    <dt>Endpoint URL</dt><dd><%= monitor.url %></dd>
-    <dt>Check</dt><dd><%= monitor.checkEvery %></dd>
-    <dt>Retry count</dt><dd><%= monitor.retryCount %></dd>
-    <dt>Alert mode</dt><dd><%= monitor.alertMode %></dd>
-    <dt>Repeat every</dt><dd><%= monitor.repeatEvery %></dd>
-    <dt>Enabled</dt><dd><%= monitor.isEnabled ? 'Yes' : 'No (paused)' %></dd>
-    <dt>Last check</dt><dd><%= monitor.lastCheck %></dd>
-    <dt>Next check</dt><dd><%= monitor.nextCheck %></dd>
-    <dt>Last response time</dt><dd><%= monitor.lastResponse %></dd>
-    <dt>Created</dt><dd><%= monitor.created %></dd>
-    <dt>Updated</dt><dd><%= monitor.updated %></dd>
-  </dl>
-</section>
 
 <%- include('../../partials/monitorExtras', { extras: extras }) %>

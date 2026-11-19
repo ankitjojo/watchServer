@@ -3,56 +3,87 @@
   var ci = v.checkInterval || {};
   var ri = v.repeatInterval || {};
   var isEnabled = v.isEnabled === true || v.isEnabled === 'on' || v.isEnabled === 'true';
+  var invalid = function (field) { return errors[field] ? ' is-invalid' : ''; };
+  var cancelHref = mode === 'create' ? '/endpoint-monitors' : '/endpoint-monitors/' + id;
 %>
-<h1><%= mode === 'create' ? 'New endpoint monitor' : 'Edit endpoint monitor' %></h1>
-<% if (errors._form) { %><div class="flash flash-error" role="alert"><%= errors._form %></div><% } %>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <div class="page-pretitle">Endpoint monitors</div>
+      <h1 class="page-title"><%= mode === 'create' ? 'New endpoint monitor' : 'Edit endpoint monitor' %></h1>
+    </div>
+  </div>
+</div>
+<% if (errors._form) { %>
+<div class="alert alert-danger flash flash-error" role="alert">
+  <div class="d-flex"><i class="ti ti-circle-x alert-icon" aria-hidden="true"></i><div><%= errors._form %></div></div>
+</div>
+<% } %>
 <form method="post" action="<%= mode === 'create' ? '/endpoint-monitors/new' : '/endpoint-monitors/' + id + '/edit' %>" class="card" id="monitor-form" novalidate>
   <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label required" for="serverName">Server name</label>
+        <input class="form-control<%= invalid('serverName') %>" id="serverName" name="serverName" type="text" maxlength="100" required placeholder="Subscription API – prod" value="<%= v.serverName || '' %>" />
+        <%- include('../../partials/fieldError', { field: 'serverName' }) %>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label required" for="url">Endpoint URL</label>
+        <input class="form-control<%= invalid('url') %>" id="url" name="url" type="text" inputmode="url" maxlength="2048" required placeholder="https://api.example.com/health" value="<%= v.url || '' %>" />
+        <small class="form-hint muted">GET request, expects status 200. http or https only, no username or password in the URL.</small>
+        <%- include('../../partials/fieldError', { field: 'url' }) %>
+      </div>
 
-  <label for="serverName">Server name</label>
-  <input id="serverName" name="serverName" type="text" maxlength="100" required value="<%= v.serverName || '' %>" />
-  <%- include('../../partials/fieldError', { field: 'serverName' }) %>
+      <div class="col-md-6">
+        <label class="form-label required" for="checkInterval-value">Check every</label>
+        <div class="input-group">
+          <input class="form-control<%= invalid('checkInterval.value') %>" id="checkInterval-value" name="checkInterval[value]" type="number" min="1" max="10000" required placeholder="5" value="<%= ci.value || '' %>" />
+          <select class="form-select" name="checkInterval[unit]" aria-label="Check interval unit">
+            <% units.interval.forEach(function (u) { %><option value="<%= u %>" <%= ci.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+          </select>
+        </div>
+        <small class="form-hint">At most 24 hours.</small>
+        <%- include('../../partials/fieldError', { field: 'checkInterval.value' }) %>
+        <%- include('../../partials/fieldError', { field: 'checkInterval.unit' }) %>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label required" for="retryCount">Retry count (0 to <%= maxRetryCount %>)</label>
+        <input class="form-control<%= invalid('retryCount') %>" id="retryCount" name="retryCount" type="number" min="0" max="<%= maxRetryCount %>" required value="<%= v.retryCount === undefined ? '' : v.retryCount %>" />
+        <%- include('../../partials/fieldError', { field: 'retryCount' }) %>
+      </div>
 
-  <label for="url">Endpoint URL</label>
-  <input id="url" name="url" type="text" inputmode="url" maxlength="2048" required placeholder="https://api.example.com/health" value="<%= v.url || '' %>" />
-  <small class="muted">GET request, expects status 200. http or https only, no username or password in the URL.</small>
-  <%- include('../../partials/fieldError', { field: 'url' }) %>
+      <div class="col-md-6">
+        <label class="form-label" for="alertMode">Alert mode</label>
+        <select class="form-select<%= invalid('alertMode') %>" id="alertMode" name="alertMode">
+          <% alertModes.forEach(function (m) { %><option value="<%= m.value %>" <%= v.alertMode === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %>
+        </select>
+        <%- include('../../partials/fieldError', { field: 'alertMode' }) %>
+      </div>
+      <div class="col-md-6" id="repeat-group" data-show-for="REPEAT_EVERY">
+        <label class="form-label" for="repeatInterval-value">Repeat interval</label>
+        <div class="input-group">
+          <input class="form-control<%= invalid('repeatInterval.value') %>" id="repeatInterval-value" name="repeatInterval[value]" type="number" min="1" max="10000" placeholder="30" value="<%= ri.value || '' %>" />
+          <select class="form-select" name="repeatInterval[unit]" aria-label="Repeat interval unit">
+            <% units.repeat.forEach(function (u) { %><option value="<%= u %>" <%= ri.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
+          </select>
+        </div>
+        <small class="form-hint">Only for "Repeat every N"; not shorter than the check interval.</small>
+        <%- include('../../partials/fieldError', { field: 'repeatInterval.value' }) %>
+      </div>
 
-  <label for="checkInterval-value">Check every</label>
-  <div class="row">
-    <input id="checkInterval-value" name="checkInterval[value]" type="number" min="1" max="10000" required value="<%= ci.value || '' %>" />
-    <select name="checkInterval[unit]" aria-label="Check interval unit">
-      <% units.interval.forEach(function (u) { %><option value="<%= u %>" <%= ci.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
-    </select>
-  </div>
-  <%- include('../../partials/fieldError', { field: 'checkInterval.value' }) %>
-  <%- include('../../partials/fieldError', { field: 'checkInterval.unit' }) %>
-
-  <label for="retryCount">Retry count (0 to <%= maxRetryCount %>)</label>
-  <input id="retryCount" name="retryCount" type="number" min="0" max="<%= maxRetryCount %>" required value="<%= v.retryCount === undefined ? '' : v.retryCount %>" />
-  <%- include('../../partials/fieldError', { field: 'retryCount' }) %>
-
-  <label for="alertMode">Alert mode</label>
-  <select id="alertMode" name="alertMode">
-    <% alertModes.forEach(function (m) { %><option value="<%= m.value %>" <%= v.alertMode === m.value ? 'selected' : '' %>><%= m.label %></option><% }) %>
-  </select>
-  <%- include('../../partials/fieldError', { field: 'alertMode' }) %>
-
-  <div id="repeat-group" data-show-for="REPEAT_EVERY">
-    <label for="repeatInterval-value">Repeat interval <small class="muted">(only for "Repeat every N"; not shorter than the check interval)</small></label>
-    <div class="row">
-      <input id="repeatInterval-value" name="repeatInterval[value]" type="number" min="1" max="10000" value="<%= ri.value || '' %>" />
-      <select name="repeatInterval[unit]" aria-label="Repeat interval unit">
-        <% units.repeat.forEach(function (u) { %><option value="<%= u %>" <%= ri.unit === u ? 'selected' : '' %>><%= u.toLowerCase() %></option><% }) %>
-      </select>
+      <div class="col-12">
+        <label class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="isEnabled" value="on" <%= isEnabled ? 'checked' : '' %> />
+          <span class="form-check-label">Enabled</span>
+        </label>
+      </div>
     </div>
-    <%- include('../../partials/fieldError', { field: 'repeatInterval.value' }) %>
   </div>
-
-  <label class="checkbox"><input type="checkbox" name="isEnabled" value="on" <%= isEnabled ? 'checked' : '' %> /> Enabled</label>
-
-  <div class="form-actions">
-    <button type="submit">Save</button>
-    <a href="<%= mode === 'create' ? '/endpoint-monitors' : '/endpoint-monitors/' + id %>">Cancel</a>
+  <div class="card-footer text-end form-actions">
+    <div class="btn-list justify-content-end">
+      <a href="<%= cancelHref %>" class="btn btn-link">Cancel</a>
+      <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-1" aria-hidden="true"></i>Save</button>
+    </div>
   </div>
 </form>

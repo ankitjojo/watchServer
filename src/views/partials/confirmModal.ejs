@@ -1,0 +1,21 @@
+<%# Shared confirmation dialog for forms with data-confirm (ui.js). Falls back to window.confirm without JS bundle. %>
+<div class="modal modal-blur fade" id="confirm-modal" tabindex="-1" aria-labelledby="confirm-modal-title" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-status bg-danger"></div>
+      <div class="modal-body text-center py-4">
+        <i class="ti ti-alert-triangle text-danger fs-1 mb-2 d-block" aria-hidden="true"></i>
+        <h3 id="confirm-modal-title">Are you sure?</h3>
+        <div class="text-secondary" data-confirm-message></div>
+      </div>
+      <div class="modal-footer">
+        <div class="w-100">
+          <div class="row">
+            <div class="col"><button type="button" class="btn w-100" data-bs-dismiss="modal">Cancel</button></div>
+            <div class="col"><button type="button" class="btn btn-danger w-100" data-confirm-accept>Confirm</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

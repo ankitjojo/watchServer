@@ -1,0 +1,8 @@
+<%# Shared scripts on every page; page scripts come from locals.scripts. No inline scripts (CSP). %>
+<script src="/vendor/tabler/js/tabler.min.js" defer></script>
+<script src="/public/js/api.js" defer></script>
+<script src="/public/js/confirm.js" defer></script>
+<script src="/public/js/ui.js" defer></script>
+<% (locals.scripts || []).forEach(function (src) { %>
+<script src="<%= src %>" defer></script>
+<% }) %>

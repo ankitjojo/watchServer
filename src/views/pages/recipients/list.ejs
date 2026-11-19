@@ -1,35 +1,51 @@
-<div class="page-head">
-  <h1>Recipients</h1>
-  <a class="button" href="/recipients/new">New recipient</a>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <div class="page-pretitle">Administration</div>
+      <h1 class="page-title">Recipients</h1>
+      <div class="text-secondary mt-1">Active recipients and all master recipients receive every alert email. Master recipients cannot be deactivated or deleted.</div>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-primary" href="/recipients/new"><i class="ti ti-plus me-1" aria-hidden="true"></i>New recipient</a>
+    </div>
+  </div>
 </div>
-<p class="muted">Active recipients and all master recipients receive every alert email. Master recipients cannot be deactivated or deleted.</p>
+
+<div class="card">
 <% if (rows.length === 0) { %>
-<%- include('../../partials/emptyState', { message: 'No recipients yet.', actionHref: '/recipients/new', actionLabel: 'Add a recipient' }) %>
+  <div class="card-body">
+    <%- include('../../partials/emptyState', { message: 'No recipients yet.', actionHref: '/recipients/new', actionLabel: 'Add a recipient', icon: 'ti-mail' }) %>
+  </div>
 <% } else { %>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Actions</th></tr>
-    </thead>
-    <tbody>
-      <% rows.forEach(function (r) { %>
-      <tr>
-        <td><%= r.name %></td>
-        <td><%= r.email %></td>
-        <td><% if (r.isMaster) { %><span class="badge badge-master">Master</span><% } else { %>Normal<% } %></td>
-        <td><%- include('../../partials/statusBadge', { status: r.isActive ? 'OK' : 'PAUSED', label: r.isActive ? 'Active' : 'Inactive' }) %></td>
-        <td class="actions">
-          <a href="/recipients/<%= r.id %>/edit">Edit</a>
-          <% if (!r.isMaster) { %>
-          <form class="inline" method="post" action="/recipients/<%= r.id %>/delete" data-confirm="Delete recipient <%= r.email %>?">
-            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
-            <button type="submit" class="link danger">Delete</button>
-          </form>
-          <% } %>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
+  <div class="card-header">
+    <h2><%= rows.length %> recipient<%= rows.length === 1 ? '' : 's' %></h2>
+    <div class="card-actions">
+      <div class="input-icon">
+        <span class="input-icon-addon"><i class="ti ti-search" aria-hidden="true"></i></span>
+        <input type="search" class="form-control form-control-sm" placeholder="Search…" aria-label="Search recipients" data-table-search="recipients" />
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive table-wrap">
+    <table class="table table-vcenter card-table" id="recipients" data-table-tools>
+      <thead>
+        <tr><th scope="col" data-sortable>Name</th><th scope="col" data-sortable>Email</th><th scope="col" data-sortable>Type</th><th scope="col" data-sortable>Status</th><th scope="col" class="w-1"><span class="sr-only">Actions</span></th></tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(function (r) { %>
+        <tr>
+          <td class="fw-semibold"><%= r.name %></td>
+          <td class="text-secondary"><%= r.email %></td>
+          <td><% if (r.isMaster) { %><span class="badge badge-master">Master</span><% } else { %>Normal<% } %></td>
+          <td><%- include('../../partials/statusBadge', { status: r.isActive ? 'OK' : 'PAUSED', label: r.isActive ? 'Active' : 'Inactive' }) %></td>
+          <td class="text-end actions">
+            <%- include('../../partials/rowActions', { label: r.email, editHref: '/recipients/' + r.id + '/edit', deleteAction: r.isMaster ? null : '/recipients/' + r.id + '/delete', confirmText: 'Delete recipient ' + r.email + '?' }) %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <p class="card-body text-secondary m-0" data-table-empty="recipients" hidden>No recipients match your search.</p>
 <% } %>
+</div>

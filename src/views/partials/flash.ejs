@@ -1,3 +1,11 @@
+<% var flashTone = { success: 'success', error: 'danger', warning: 'warning', info: 'info' }; %>
+<% var flashIcon = { success: 'ti-circle-check', error: 'ti-circle-x', warning: 'ti-alert-triangle', info: 'ti-info-circle' }; %>
 <% (locals.flash || []).forEach(function (message) { %>
-<div class="flash flash-<%= message.type %>" role="status"><%= message.text %></div>
+<div class="alert alert-<%= flashTone[message.type] || 'info' %> alert-dismissible flash flash-<%= message.type %>" role="<%= message.type === 'error' ? 'alert' : 'status' %>">
+  <div class="d-flex">
+    <i class="ti <%= flashIcon[message.type] || 'ti-info-circle' %> alert-icon" aria-hidden="true"></i>
+    <div><%= message.text %></div>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 <% }) %>

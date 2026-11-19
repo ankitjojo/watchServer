@@ -1,0 +1,9 @@
+<div class="dropdown-header">
+  <div class="fw-semibold text-body"><%= currentUser.name %></div>
+  <div class="small text-secondary"><%= currentUser.email %> · <%= currentUser.role === 'ADMIN' ? 'Admin' : 'Viewer' %></div>
+</div>
+<div class="dropdown-divider"></div>
+<form method="post" action="/logout" class="m-0">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
+  <button type="submit" class="dropdown-item"><i class="ti ti-logout me-2" aria-hidden="true"></i>Sign out</button>
+</form>

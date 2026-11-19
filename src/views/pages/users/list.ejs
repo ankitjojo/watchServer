@@ -1,33 +1,52 @@
-<div class="page-head">
-  <h1>Users</h1>
-  <a class="button" href="/users/new">New user</a>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <div class="page-pretitle">Administration</div>
+      <h1 class="page-title">Users</h1>
+      <div class="text-secondary mt-1">People who can sign in to this dashboard. Viewers can see everything but change nothing.</div>
+    </div>
+    <div class="col-auto ms-auto">
+      <a class="btn btn-primary" href="/users/new"><i class="ti ti-plus me-1" aria-hidden="true"></i>New user</a>
+    </div>
+  </div>
 </div>
+
+<div class="card">
 <% if (rows.length === 0) { %>
-<%- include('../../partials/emptyState', { message: 'No users yet.', actionHref: '/users/new', actionLabel: 'Create the first user' }) %>
+  <div class="card-body">
+    <%- include('../../partials/emptyState', { message: 'No users yet.', actionHref: '/users/new', actionLabel: 'Create the first user', icon: 'ti-users' }) %>
+  </div>
 <% } else { %>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last login</th><th scope="col">Actions</th></tr>
-    </thead>
-    <tbody>
-      <% rows.forEach(function (u) { %>
-      <tr>
-        <td><%= u.name %></td>
-        <td><%= u.email %></td>
-        <td><%= u.role %></td>
-        <td><%- include('../../partials/statusBadge', { status: u.isActive ? 'OK' : 'PAUSED', label: u.isActive ? 'Active' : 'Inactive' }) %></td>
-        <td><%= u.lastLogin %></td>
-        <td class="actions">
-          <a href="/users/<%= u.id %>/edit">Edit</a>
-          <form class="inline" method="post" action="/users/<%= u.id %>/delete" data-confirm="Delete user <%= u.email %>?">
-            <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
-            <button type="submit" class="link danger">Delete</button>
-          </form>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
+  <div class="card-header">
+    <h2><%= rows.length %> user<%= rows.length === 1 ? '' : 's' %></h2>
+    <div class="card-actions">
+      <div class="input-icon">
+        <span class="input-icon-addon"><i class="ti ti-search" aria-hidden="true"></i></span>
+        <input type="search" class="form-control form-control-sm" placeholder="Search…" aria-label="Search users" data-table-search="users" />
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive table-wrap">
+    <table class="table table-vcenter card-table" id="users" data-table-tools>
+      <thead>
+        <tr><th scope="col" data-sortable>Name</th><th scope="col" data-sortable>Email</th><th scope="col" data-sortable>Role</th><th scope="col" data-sortable>Status</th><th scope="col" data-sortable>Last login</th><th scope="col" class="w-1"><span class="sr-only">Actions</span></th></tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(function (u) { %>
+        <tr>
+          <td class="fw-semibold"><%= u.name %></td>
+          <td class="text-secondary"><%= u.email %></td>
+          <td><span class="badge <%= u.role === 'ADMIN' ? 'bg-primary-lt' : 'bg-secondary-lt' %>"><%= u.role %></span></td>
+          <td><%- include('../../partials/statusBadge', { status: u.isActive ? 'OK' : 'PAUSED', label: u.isActive ? 'Active' : 'Inactive' }) %></td>
+          <td class="text-secondary text-nowrap"><%= u.lastLogin %></td>
+          <td class="text-end actions">
+            <%- include('../../partials/rowActions', { label: u.email, editHref: '/users/' + u.id + '/edit', deleteAction: '/users/' + u.id + '/delete', confirmText: 'Delete user ' + u.email + '?' }) %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <p class="card-body text-secondary m-0" data-table-empty="users" hidden>No users match your search.</p>
 <% } %>
+</div>

@@ -1,48 +1,69 @@
-<section class="card" id="chart-section">
-  <h2><%= extras.chart.type === 'webhook' ? 'Document age' : 'Response time and availability' %></h2>
-  <div class="row range-picker" id="chart-controls">
-    <button type="button" data-range="24h">24 h</button>
-    <button type="button" data-range="7d">7 d</button>
-    <button type="button" data-range="30d">30 d</button>
-    <label class="inline-label">From <input type="date" id="chart-from" /></label>
-    <label class="inline-label">To <input type="date" id="chart-to" /></label>
-    <button type="button" data-range="custom">Custom range</button>
+<section class="card mb-3" id="chart-section">
+  <div class="card-header flex-wrap gap-2">
+    <h2><%= extras.chart.type === 'webhook' ? 'Document age' : 'Response time and availability' %></h2>
+    <div class="card-actions d-flex flex-wrap align-items-center gap-2 range-picker" id="chart-controls">
+      <div class="btn-group" role="group" aria-label="Chart range">
+        <button type="button" class="btn btn-sm" data-range="24h">24 h</button>
+        <button type="button" class="btn btn-sm" data-range="7d">7 d</button>
+        <button type="button" class="btn btn-sm" data-range="30d">30 d</button>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <label class="form-label m-0 small text-secondary" for="chart-from">From</label>
+        <input type="date" class="form-control form-control-sm" id="chart-from" />
+        <label class="form-label m-0 small text-secondary" for="chart-to">To</label>
+        <input type="date" class="form-control form-control-sm" id="chart-to" />
+        <button type="button" class="btn btn-sm btn-outline-primary" data-range="custom">Apply</button>
+      </div>
+    </div>
   </div>
-  <%# The chart settings travel in an attribute: attributes are decoded by the browser, script text is not. %>
-  <div id="chart-root" data-config="<%= JSON.stringify(extras.chart) %>">
-    <canvas id="chart" role="img" aria-label="Chart of recent checks (times in UTC)"></canvas>
+  <div class="card-body">
+    <%# The chart settings travel in an attribute: attributes are decoded by the browser, script text is not. %>
+    <div id="chart-root" data-config="<%= JSON.stringify(extras.chart) %>">
+      <canvas id="chart" role="img" aria-label="Chart of recent checks (times in UTC)"></canvas>
+    </div>
+    <output id="chart-status" class="muted small" aria-live="polite"></output>
   </div>
-  <output id="chart-status" class="muted" aria-live="polite"></output>
 </section>
 
-<section class="card">
-  <h2>History</h2>
-  <form method="get" class="filters">
-    <label>Result
-      <select name="result">
-        <option value="">All</option>
-        <% ['OK','STALE','NO_DATA','DOWN','ERROR'].forEach(function (r) { %>
-        <option value="<%= r %>" <%= extras.history.filters.result === r ? 'selected' : '' %>><%= r.replace('_', ' ') %></option>
-        <% }) %>
-      </select>
-    </label>
-    <label>From (UTC) <input type="date" name="from" value="<%= extras.history.filters.from %>" /></label>
-    <label>To (UTC) <input type="date" name="to" value="<%= extras.history.filters.to %>" /></label>
-    <button type="submit">Filter</button>
-    <a href="?">Clear</a>
-  </form>
+<section class="card mb-3">
+  <div class="card-header"><h2>History</h2></div>
+  <div class="card-body border-bottom py-3">
+    <form method="get" class="row g-2 align-items-end filters">
+      <div class="col-sm-4 col-lg-3">
+        <label class="form-label" for="history-result">Result</label>
+        <select class="form-select" name="result" id="history-result">
+          <option value="">All</option>
+          <% ['OK','STALE','NO_DATA','DOWN','ERROR'].forEach(function (r) { %>
+          <option value="<%= r %>" <%= extras.history.filters.result === r ? 'selected' : '' %>><%= r.replace('_', ' ') %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg-3">
+        <label class="form-label" for="history-from">From (UTC)</label>
+        <input class="form-control" type="date" name="from" id="history-from" value="<%= extras.history.filters.from %>" />
+      </div>
+      <div class="col-sm-4 col-lg-3">
+        <label class="form-label" for="history-to">To (UTC)</label>
+        <input class="form-control" type="date" name="to" id="history-to" value="<%= extras.history.filters.to %>" />
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary"><i class="ti ti-filter me-1" aria-hidden="true"></i>Filter</button>
+        <a href="?" class="btn btn-link">Clear</a>
+      </div>
+    </form>
+  </div>
   <% if (extras.history.rows.length === 0) { %>
-  <p class="muted">No checks match.</p>
+  <div class="card-body"><p class="text-secondary m-0">No checks match.</p></div>
   <% } else { %>
-  <div class="table-wrap">
-    <table>
+  <div class="table-responsive table-wrap">
+    <table class="table table-vcenter card-table">
       <thead><tr><th scope="col">Started</th><th scope="col">Result</th><th scope="col">Trigger</th><th scope="col">Details</th></tr></thead>
       <tbody>
         <% extras.history.rows.forEach(function (c) { %>
         <tr>
-          <td><%= c.started %></td>
+          <td class="text-secondary text-nowrap"><%= c.started %></td>
           <td><%- include('./statusBadge', { status: c.result, label: c.result.replace('_', ' ') }) %></td>
-          <td><%= c.trigger %></td>
+          <td class="text-secondary"><%= c.trigger %></td>
           <td><%= c.detail %></td>
         </tr>
         <% }) %>
@@ -53,17 +74,17 @@
   <% } %>
 </section>
 
-<section class="card">
-  <h2>Incidents</h2>
+<section class="card mb-3">
+  <div class="card-header"><h2>Incidents</h2></div>
   <% if (extras.incidents.length === 0) { %>
-  <p class="muted">No incidents.</p>
+  <div class="card-body"><p class="text-secondary m-0">No incidents.</p></div>
   <% } else { %>
-  <div class="table-wrap">
-    <table>
+  <div class="table-responsive table-wrap">
+    <table class="table table-vcenter card-table">
       <thead><tr><th scope="col">Started</th><th scope="col">Ended</th><th scope="col">Duration</th><th scope="col">Note</th></tr></thead>
       <tbody>
         <% extras.incidents.forEach(function (i) { %>
-        <tr><td><%= i.opened %></td><td><%= i.closed %></td><td><%= i.duration %></td><td><%= i.note %></td></tr>
+        <tr><td class="text-nowrap"><%= i.opened %></td><td class="text-nowrap"><%= i.closed %></td><td><%= i.duration %></td><td class="text-secondary"><%= i.note %></td></tr>
         <% }) %>
       </tbody>
     </table>
@@ -71,7 +92,7 @@
   <% } %>
 </section>
 
-<section class="card">
-  <h2>Alerts and emails</h2>
+<section class="card mb-3">
+  <div class="card-header"><h2>Alerts and emails</h2></div>
   <%- include('./alertsTable', { rows: extras.alerts, showMonitor: false, emptyText: 'No alerts for this monitor yet.' }) %>
 </section>

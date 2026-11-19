@@ -1,47 +1,103 @@
-<h1>Overview</h1>
+<%
+  var isAdmin = !!(locals.currentUser && currentUser.role === 'ADMIN');
+  var cards = [
+    { value: overview.cards.total, label: 'Monitors', icon: 'ti-activity-heartbeat', tone: 'primary' },
+    { value: overview.cards.ok, label: 'OK', icon: 'ti-circle-check', tone: 'success' },
+    { value: overview.cards.failing, label: 'Failing', icon: 'ti-alert-triangle', tone: 'danger' },
+    { value: overview.cards.paused, label: 'Paused', icon: 'ti-player-pause', tone: 'secondary' },
+    { value: overview.cards.openIncidents, label: 'Open incidents', icon: 'ti-clock', tone: 'warning' },
+    { value: overview.cards.emailsFailed, label: 'Emails failed', icon: 'ti-mail-x', tone: 'danger', href: '/alerts?status=FAILED' },
+  ];
+%>
+<div class="page-header d-print-none mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col">
+      <h1 class="page-title">Overview</h1>
+      <div class="text-secondary mt-1">Current status of every monitor. All times are UTC.</div>
+    </div>
+    <% if (isAdmin) { %>
+    <div class="col-auto ms-auto">
+      <div class="btn-list">
+        <a class="btn btn-outline-primary" href="/endpoint-monitors/new"><i class="ti ti-world me-1" aria-hidden="true"></i>New endpoint monitor</a>
+        <a class="btn btn-primary" href="/webhook-monitors/new"><i class="ti ti-plus me-1" aria-hidden="true"></i>New webhook monitor</a>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
 
 <% if (overview.sourceOutage) { %>
-<div class="flash flash-error" role="alert">
-  The source database could not be read since <%= overview.sourceOutage.openedAt %>. <%= overview.sourceOutage.affectedCount %> webhook monitor(s) are affected; their status is left unchanged until it answers again.
+<div class="alert alert-danger flash flash-error" role="alert">
+  <div class="d-flex">
+    <i class="ti ti-database-off alert-icon" aria-hidden="true"></i>
+    <div>
+      <h4 class="alert-title">Source database unreachable</h4>
+      <div class="text-secondary">The source database could not be read since <%= overview.sourceOutage.openedAt %>. <%= overview.sourceOutage.affectedCount %> webhook monitor(s) are affected; their status is left unchanged until it answers again.</div>
+    </div>
+  </div>
 </div>
 <% } %>
 
-<section class="cards" aria-label="Summary">
-  <div class="stat"><span class="stat-value"><%= overview.cards.total %></span><span class="stat-label">Monitors</span></div>
-  <div class="stat"><span class="stat-value"><%= overview.cards.ok %></span><span class="stat-label">OK</span></div>
-  <div class="stat"><span class="stat-value"><%= overview.cards.failing %></span><span class="stat-label">Failing</span></div>
-  <div class="stat"><span class="stat-value"><%= overview.cards.paused %></span><span class="stat-label">Paused</span></div>
-  <div class="stat"><span class="stat-value"><%= overview.cards.openIncidents %></span><span class="stat-label">Open incidents</span></div>
-  <div class="stat"><a href="/alerts?status=FAILED" class="stat-link"><span class="stat-value"><%= overview.cards.emailsFailed %></span><span class="stat-label">Emails failed</span></a></div>
+<section class="row row-deck row-cards mb-3" aria-label="Summary">
+  <% cards.forEach(function (c) { %>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-sm">
+      <div class="card-body">
+        <% if (c.href) { %><a href="<%= c.href %>" class="stat-link d-block"><% } %>
+        <div class="row align-items-center g-2">
+          <div class="col-auto"><span class="avatar bg-<%= c.tone %>-lt text-<%= c.tone %>"><i class="ti <%= c.icon %> fs-2" aria-hidden="true"></i></span></div>
+          <div class="col"><span class="stat-value"><%= c.value %></span><span class="stat-label"><%= c.label %></span></div>
+        </div>
+        <% if (c.href) { %></a><% } %>
+      </div>
+    </div>
+  </div>
+  <% }) %>
 </section>
 
+<div class="card">
+  <div class="card-header">
+    <h2>Monitors</h2>
+    <% if (overview.rows.length > 0) { %>
+    <div class="card-actions">
+      <div class="input-icon">
+        <span class="input-icon-addon"><i class="ti ti-search" aria-hidden="true"></i></span>
+        <input type="search" class="form-control form-control-sm" placeholder="Search monitors…" aria-label="Search monitors" data-table-search="overview-monitors" />
+      </div>
+    </div>
+    <% } %>
+  </div>
 <% if (overview.rows.length === 0) { %>
-  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %>
-<%- include('../../partials/emptyState', { message: 'No monitors yet. Create a webhook or endpoint monitor to start watching.', actionHref: '/webhook-monitors/new', actionLabel: 'Create a webhook monitor' }) %>
+  <div class="card-body">
+  <% if (isAdmin) { %>
+    <%- include('../../partials/emptyState', { message: 'No monitors yet. Create a webhook or endpoint monitor to start watching.', actionHref: '/webhook-monitors/new', actionLabel: 'Create a webhook monitor', icon: 'ti-activity-heartbeat' }) %>
   <% } else { %>
-<%- include('../../partials/emptyState', { message: 'No monitors have been set up yet. An admin can create them.' }) %>
+    <%- include('../../partials/emptyState', { message: 'No monitors have been set up yet. An admin can create them.', icon: 'ti-activity-heartbeat' }) %>
   <% } %>
+  </div>
 <% } else { %>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th scope="col">Monitor</th><th scope="col">Type</th><th scope="col">Status</th>
-        <th scope="col">Last check</th><th scope="col">Next check</th><th scope="col">Last doc age / response</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% overview.rows.forEach(function (m) { %>
-      <tr>
-        <td><a href="<%= m.href %>"><%= m.name %></a></td>
-        <td><%= m.typeLabel %></td>
-        <td><%- include('../../partials/statusBadge', { status: m.status, label: m.statusLabel }) %></td>
-        <td><%= m.lastCheck %></td>
-        <td><%= m.nextCheck %></td>
-        <td><%= m.metric %></td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
+  <div class="table-responsive table-wrap">
+    <table class="table table-vcenter card-table" id="overview-monitors" data-table-tools>
+      <thead>
+        <tr>
+          <th scope="col" data-sortable>Monitor</th><th scope="col" data-sortable>Type</th><th scope="col" data-sortable>Status</th>
+          <th scope="col" data-sortable>Last check</th><th scope="col" data-sortable>Next check</th><th scope="col">Last doc age / response</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% overview.rows.forEach(function (m) { %>
+        <tr>
+          <td><a href="<%= m.href %>" class="fw-semibold"><%= m.name %></a></td>
+          <td class="text-secondary"><%= m.typeLabel %></td>
+          <td><%- include('../../partials/statusBadge', { status: m.status, label: m.statusLabel }) %></td>
+          <td class="text-secondary"><%= m.lastCheck %></td>
+          <td class="text-secondary"><%= m.nextCheck %></td>
+          <td><%= m.metric %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <p class="card-body text-secondary m-0" data-table-empty="overview-monitors" hidden>No monitors match your search.</p>
 <% } %>
+</div>
