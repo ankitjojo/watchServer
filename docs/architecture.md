@@ -89,7 +89,7 @@ Hard rules:
 1. Scheduler fires for monitor `M` → skip if `M` already in flight (log `check.skipped`).
 2. Runner calls `sourceData.getLatestTimestamp(collection, key)` (projection `{_id, key}`, `maxTimeMS`).
 3. Pure `evaluateStaleness({ latestTs, now, thresholdMs })` → `OK | STALE | NO_DATA`. Source failure → `ERROR`. The read is one `find`; existence (`listCollections` by name) is checked only when it comes back empty (review M8).
-4. `checks.service.record(...)` inserts the check.
+4. `checks.service.record(...)` inserts the check. Then the runner re-reads the monitor (`isStillRunnable`): if it was **deleted** meanwhile (or, for a scheduled run, paused), the check stays stored but no incident, alert or state change follows (`check.droppedDeleted`, review L4, TD-36).
 5. Source DB **outage** (connection-level, TD-29) → `alerts.service.handleSourceError(...)` (grouped, master only, FR-A4a). Monitor state unchanged.
    A per-collection `ERROR` (missing collection, timeout, query error) is the monitor's own failure and, like every other result, goes to `processCheckOutcome` → pure `decideAlert({ monitorState, result, alertMode, repeatIntervalMs, now })` returns actions:
    `openIncident | sendFailure | sendReminder | closeIncident+sendRecovered | none`.

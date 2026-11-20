@@ -1,6 +1,6 @@
 # payMonitor — Database Design
 
-> Status: **Implemented** (v1). Indexes are created by `src/database/indexes.ts` (`npm run db:indexes`; automatic outside production). No migrations exist yet.
+> Status: **Implemented** (v1). Indexes are created by `src/database/indexes.ts` (`npm run db:indexes`; automatic outside production). One migration exists (soft delete, TD-36): `scripts/migrate-soft-delete.ts` (`npm run db:migrate-soft-delete`, dry-run by default, `--apply` writes; see B.4).
 > Requirements: [requirements.md §6](requirements.md). Rules: `.claude/rules/database.md`. Decisions: TD-03, TD-08, TD-09, TD-16.
 
 Two MongoDB databases, two clients, two very different rule sets.
@@ -95,7 +95,8 @@ Shared shape used for every duration (`oCheckInterval`, `oThreshold`, `oRepeatIn
 | eRole | `ADMIN` \| `VIEWER` | |
 | bIsActive | boolean | |
 | dLastLoginAt | Date \| null | |
-Indexes: `{ sEmail: 1 }` unique.
+| bIsDeleted / dDeletedAt / iDeletedBy | boolean / Date \| null / ObjectId \| null | Soft delete (TD-36). New documents store `false/null/null`. **A missing `bIsDeleted` means not deleted** (old documents); the repository adds `{ bIsDeleted: { $ne: true } }` to every read, count and update by default. Deleting also sets `bIsActive: false`. |
+Indexes: `{ sEmail: 1 }` unique **partial** on `{ bIsDeleted: false }`, name `sEmail_1_active_unique` (replaces the plain `sEmail_1`). Emails are trimmed and lower-cased on write (`emailSchema`), so no collation index is used. A deleted user keeps its email and may share it with an active user.
 
 #### `recipients` (FR-R1..R3)
 | Field | Type |
@@ -104,7 +105,8 @@ Indexes: `{ sEmail: 1 }` unique.
 | sEmail | string (lower-cased) |
 | bIsActive | boolean |
 | eType | `NORMAL` \| `MASTER` |
-Indexes: `{ sEmail: 1 }` unique; `{ bIsActive: 1, eType: 1 }`.
+| bIsDeleted / dDeletedAt / iDeletedBy | boolean / Date \| null / ObjectId \| null: soft delete, same rules as `users` (TD-36). A deleted recipient is inactive and excluded from `findAudience`. |
+Indexes: `{ sEmail: 1 }` unique **partial** on `{ bIsDeleted: false }`, name `sEmail_1_active_unique`; `{ bIsActive: 1, eType: 1 }`.
 Invariant "≥ 1 MASTER exists" is enforced in the service (a master cannot be deleted or deactivated; `eType` cannot be changed from MASTER).
 
 #### `webhook_monitors` (FR-W1)
@@ -121,7 +123,8 @@ Invariant "≥ 1 MASTER exists" is enforced in the service (a master cannot be d
 | bIsEnabled | boolean |
 | bHasDescIndexAtSave | boolean (for the warning badge) |
 | oState | `{ eLastResult, eCurrentStatus, dLastCheckAt, dNextCheckAt, iLastCheckId, iOpenIncidentId, nLastAgeMs, nLastResponseTimeMs }`. `eLastResult` is the last result including `ERROR`; `eCurrentStatus` stays unchanged during a source outage (FR-A4a) and is `ERROR` for the monitor's own per-collection error (TD-29). `dLastAlertAt` / `nReminderCount` live on `incidents` (TD-21). Written only through dotted `$set` on `oState.*`. |
-| dDeletedAt | Date \| null (always stored, `null` while active) |
+| dDeletedAt | Date \| null (always stored, `null` while active). This is the soft-delete marker for monitors; they have **no** `bIsDeleted` (TD-36). |
+| iDeletedBy | ObjectId \| null (users), optional: who deleted it; absent on monitors deleted before TD-36 |
 | iCreatedBy / iUpdatedBy | ObjectId (users) |
 Indexes: `{ sName: 1 }` unique with `partialFilterExpression: { dDeletedAt: { $type: 'null' } }` (MongoDB rejects `{ field: null }` in a partial filter, so documents must store an explicit `null`); `{ bIsEnabled: 1, dDeletedAt: 1 }`.
 
@@ -213,6 +216,7 @@ Transactions are **not** required by this design (open question A1).
 - Chart series: aggregate server-side, cap points (≤ 500) by bucketing for 7d/30d ranges.
 
 ### B.4 Schema evolution
+- **Soft-delete migration (TD-36)**: `scripts/migrate-soft-delete.ts` (`npm run db:migrate-soft-delete`). Default is dry-run (counts only); `--apply` writes. It (1) aborts if two non-deleted users/recipients share an email (trimmed, lower-cased), (2) backfills `bIsDeleted: false` only where missing, (3) normalises non-normalised emails, (4) creates `sEmail_1_active_unique`, (5) only then drops the legacy `sEmail_1` (both unique indexes coexist in between on MongoDB 7.0). It refuses any non-localhost `MONGO_URI` and never connects to the Source DB. **Deploy order: stop the old app, run the migration, deploy the new code.** `src/database/indexes.ts` creates only the new index at startup and never drops anything. Rollback: keep the backfilled field; recreate `sEmail_1` (`{ sEmail: 1 }`, unique) and drop `sEmail_1_active_unique`; this fails while a deleted record shares an email with an active one.
 - No migration framework initially. Index creation in `src/database/indexes.ts`, run at every startup in every environment (idempotent; a failure stops startup, TD-31) and on demand via `npm run db:indexes`.
 - Additive changes only (new optional fields). Renames/removals need a written plan in `docs/implementation_plans/` + a script under `scripts/` that defaults to **dry-run**.
 - Repositories tolerate missing optional fields (old docs).

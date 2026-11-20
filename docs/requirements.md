@@ -42,7 +42,7 @@ It has two parts:
 | **Viewer** | Read only: dashboard, monitor list, monitor details, history and charts, alert and email logs. Cannot create, edit, delete, pause, run or resend. |
 
 - Users log in with **email + password**. Passwords are stored hashed (bcrypt).
-- Admins can create, edit, deactivate and delete dashboard users and set each user's role.
+- Admins can create, edit, deactivate and delete dashboard users and set each user's role. **Delete does not remove the record** (TD-36): the user can no longer sign in (an open session ends on its next request), is inactive, is not counted as an admin, and is listed under **Deleted records** on the Users page. A deleted user's email can be used again.
 - An inactive user cannot log in.
 - The **first admin** is created automatically at first startup from `.env` (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`). This only happens when no users exist yet.
 - An admin cannot delete or demote themselves if they are the last active admin.
@@ -168,7 +168,7 @@ It has two parts:
 
 ### 4.4 Recipients (Alert Email List)
 
-**FR-R1.** Admin can create, read, update and delete recipients. Fields: **sName**, **sEmail** (unique, validated), **bIsActive**, **eType** (`normal` or `master`, stored as `NORMAL`/`MASTER`).
+**FR-R1.** Admin can create, read, update and delete recipients. **Delete does not remove the record** (TD-36): the recipient becomes inactive, gets no new alerts and is listed under **Deleted records** on the Recipients page; alerts stored before the delete keep their recipient list (FR-A5). A deleted recipient's email can be used again. Fields: **sName**, **sEmail** (unique, validated), **bIsActive**, **eType** (`normal` or `master`, stored as `NORMAL`/`MASTER`).
 
 **FR-R2.** Only **active** normal recipients receive alerts. Master recipients **always** receive every alert.
 
@@ -187,7 +187,7 @@ It has two parts:
 **FR-D2. Monitors pages:**
 - Separate lists for webhook monitors and endpoint monitors
 - Create and edit forms (FR-W1, FR-E1) with validation
-- Delete with a confirmation step. Deleting a monitor keeps its history; the monitor is soft-deleted.
+- Delete with a confirmation step. Deleting a monitor keeps its history; the monitor is soft-deleted: it stops (no schedule, open incident closed without email) and is listed under **Deleted records** on its list page, where its detail page opens read-only (TD-36).
 
 **FR-D3. Actions on each monitor (admin only):**
 - **Pause / Resume**: stops or starts scheduling without deleting. Pausing does not close an open incident. After resume, the next check decides the status.
@@ -195,6 +195,7 @@ It has two parts:
 - **Test email**: sends a sample `TEST` alert to the current recipients. It is stored like any other alert.
 
 **FR-D4. Monitor detail page:**
+(A deleted monitor's detail page is read-only: a "deleted on ... no longer runs" banner and no action buttons. Its history, incidents, alerts and charts stay readable.)
 - Configuration
 - Current status
 - **History table**: every check, with filters and pagination
@@ -209,7 +210,7 @@ It has two parts:
 - All alerts, with filters by monitor, type, email status and date range
 
 **FR-D6. Admin pages:**
-- Recipients CRUD (FR-R)
+- Recipients CRUD (FR-R); delete moves a record to **Deleted records**, a full-screen popup opened by one button per list page, next to the New button
 - Dashboard users CRUD (§3)
 
 **FR-D7. Times:** All times are shown in **UTC**, labelled "UTC". This applies to both the dashboard and emails.
