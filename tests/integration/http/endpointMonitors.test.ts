@@ -156,8 +156,13 @@ describe('endpoint monitors', () => {
     expect(
       (await admin.post(`/endpoint-monitors/${id}/delete`).type('form').send({ _csrf: token })).status,
     ).toBe(303);
-    expect((await admin.get(`/endpoint-monitors/${id}`)).status).toBe(404);
-    expect((await admin.get('/endpoint-monitors')).text).not.toContain('Temp server');
+    // Soft delete: still readable (read-only), listed under Deleted records, not editable.
+    expect((await admin.get(`/endpoint-monitors/${id}`)).status).toBe(200);
+    expect((await admin.get(`/endpoint-monitors/${id}/edit`)).status).toBe(404);
+    const list = (await admin.get('/endpoint-monitors')).text;
+    expect(list).toContain('Deleted records (1)');
+    // Everything after the modal is the live table (the flash above may name the monitor).
+    expect(list.split('</dialog>')[1]).not.toContain('Temp server');
     expect(
       (await t.db.collection(COLLECTIONS.ENDPOINT_MONITORS).findOne({ sServerName: 'Temp server' }))?.[
         'dDeletedAt'

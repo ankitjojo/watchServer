@@ -1,6 +1,9 @@
 <div class="page-head">
   <h1>Users</h1>
-  <a class="button" href="/users/new">New user</a>
+  <div class="head-actions">
+    <%- include('../../partials/deletedRecords', { rows: deletedRows, columns: deletedColumns, title: 'Deleted users' }) %>
+    <a class="button" href="/users/new">New user</a>
+  </div>
 </div>
 <p class="muted">Dashboard logins. Admins can change everything; viewers can only look. There must always be at least one active admin.</p>
 <% if (rows.length === 0) { %>
@@ -21,7 +24,7 @@
         <td><%= u.lastLogin %></td>
         <td class="actions">
           <a href="/users/<%= u.id %>/edit">Edit</a>
-          <form class="inline" method="post" action="/users/<%= u.id %>/delete" data-confirm="Delete user <%= u.email %>?">
+          <form class="inline" method="post" action="/users/<%= u.id %>/delete" data-confirm="Delete user <%= u.email %>? It moves to Deleted records and can no longer sign in.">
             <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
             <button type="submit" class="link danger">Delete</button>
           </form>

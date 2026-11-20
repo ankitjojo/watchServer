@@ -1,6 +1,9 @@
 <div class="page-head">
   <h1>Endpoint monitors</h1>
-  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %><a class="button" href="/endpoint-monitors/new">New endpoint monitor</a><% } %>
+  <div class="head-actions">
+    <%- include('../../partials/deletedRecords', { rows: deletedRows, columns: deletedColumns, title: 'Deleted endpoint monitors' }) %>
+    <% if (locals.currentUser && currentUser.role === 'ADMIN') { %><a class="button" href="/endpoint-monitors/new">New endpoint monitor</a><% } %>
+  </div>
 </div>
 <p class="muted">Each monitor sends an HTTP GET and expects status 200. It is down only when every attempt fails.</p>
 <% if (rows.length === 0) { %>

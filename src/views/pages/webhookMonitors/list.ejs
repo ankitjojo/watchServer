@@ -1,6 +1,9 @@
 <div class="page-head">
   <h1>Webhook monitors</h1>
-  <% if (locals.currentUser && currentUser.role === 'ADMIN') { %><a class="button" href="/webhook-monitors/new">New webhook monitor</a><% } %>
+  <div class="head-actions">
+    <%- include('../../partials/deletedRecords', { rows: deletedRows, columns: deletedColumns, title: 'Deleted webhook monitors' }) %>
+    <% if (locals.currentUser && currentUser.role === 'ADMIN') { %><a class="button" href="/webhook-monitors/new">New webhook monitor</a><% } %>
+  </div>
 </div>
 <p class="muted">Each monitor watches one source collection and alerts when no new document arrives within the threshold.</p>
 <% if (rows.length === 0) { %>

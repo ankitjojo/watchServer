@@ -1,6 +1,9 @@
 <div class="page-head">
   <h1>Recipients</h1>
-  <a class="button" href="/recipients/new">New recipient</a>
+  <div class="head-actions">
+    <%- include('../../partials/deletedRecords', { rows: deletedRows, columns: deletedColumns, title: 'Deleted recipients' }) %>
+    <a class="button" href="/recipients/new">New recipient</a>
+  </div>
 </div>
 <p class="muted">Active recipients and all master recipients receive every alert email. Master recipients cannot be deactivated or deleted.</p>
 <% if (rows.length === 0) { %>
@@ -21,7 +24,7 @@
         <td class="actions">
           <a href="/recipients/<%= r.id %>/edit">Edit</a>
           <% if (!r.isMaster) { %>
-          <form class="inline" method="post" action="/recipients/<%= r.id %>/delete" data-confirm="Delete recipient <%= r.email %>?">
+          <form class="inline" method="post" action="/recipients/<%= r.id %>/delete" data-confirm="Delete recipient <%= r.email %>? It moves to Deleted records and stops receiving alerts.">
             <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" />
             <button type="submit" class="link danger">Delete</button>
           </form>

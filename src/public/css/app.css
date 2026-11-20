@@ -776,3 +776,61 @@ dl.details dt {
 .page-head + .empty {
   margin-top: 16px;
 }
+
+/* ---- Deleted records modal (native <dialog>, opened by public/js/deletedRecords.js) ---- */
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.deleted-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  background: var(--surface);
+}
+.deleted-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.deleted-dialog::backdrop {
+  background: rgb(0 0 0 / 50%);
+}
+.deleted-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.deleted-dialog-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.deleted-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto; /* its own scroll: sticky header sticks to this box, the page behind stays put */
+  padding: 16px 20px;
+}
+.deleted-dialog-body .table-wrap {
+  overflow: visible; /* the body scrolls both ways; .table thead th is already position: sticky */
+}
+.deleted-dialog-body p {
+  margin: 0;
+}
+html:has(dialog.deleted-dialog[open]) {
+  overflow: hidden;
+}
+.badge-deleted {
+  color: var(--muted);
+}

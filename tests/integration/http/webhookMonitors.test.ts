@@ -253,8 +253,13 @@ describe('editing and deleting', () => {
     expect(
       (await admin.post(`/webhook-monitors/${id}/delete`).type('form').send({ _csrf: token })).status,
     ).toBe(303);
-    expect((await admin.get('/webhook-monitors')).text).not.toContain('To delete');
-    expect((await admin.get(`/webhook-monitors/${id}`)).status).toBe(404);
+    // Soft delete: still readable (read-only), listed under Deleted records, not editable.
+    const list = (await admin.get('/webhook-monitors')).text;
+    expect(list).toContain('Deleted records (1)');
+    // Everything after the modal is the live table (the flash above may name the monitor).
+    expect(list.split('</dialog>')[1]).not.toContain('To delete');
+    expect((await admin.get(`/webhook-monitors/${id}`)).status).toBe(200);
+    expect((await admin.get(`/webhook-monitors/${id}/edit`)).status).toBe(404);
     const kept = await t.db.collection(COLLECTIONS.WEBHOOK_MONITORS).findOne({ sName: 'To delete' });
     expect(kept?.['dDeletedAt']).toEqual(expect.any(Date));
     expect(kept?.['bIsEnabled']).toBe(false);
