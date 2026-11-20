@@ -12,6 +12,11 @@
     <div class="app-shell<%= locals.currentUser ? ' has-sidebar' : '' %>">
       <%- include('../partials/nav') %>
       <main class="page">
+        <%# Back link on every nested page (detail, edit, new). href = parent path (no-JS fallback); navigation.js upgrades it to history.back(). %>
+        <% const segments = (locals.currentPath || '').split('/').filter(Boolean); %>
+        <% if (locals.currentUser && segments.length > 1) { %>
+        <a class="back-link" data-back href="/<%= segments.slice(0, -1).join('/') %>"><span aria-hidden="true">&larr;</span> Back</a>
+        <% } %>
         <%- include('../partials/flash') %>
         <%# body is a page template we rendered ourselves (renderPage); it escapes its own values. %>
         <%- body %>

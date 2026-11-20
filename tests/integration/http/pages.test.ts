@@ -1,4 +1,5 @@
 import { COLLECTIONS } from '../../../src/constants/collections.js';
+import request from 'supertest';
 import { ObjectId } from 'mongodb';
 import { createAlertsRepository } from '../../../src/modules/alerts/alerts.repository.js';
 import { startTestMongo, type TestMongo } from '../../helpers/memoryMongo.js';
@@ -305,5 +306,20 @@ describe('product name from APP_NAME (plan app-name-from-env)', () => {
     expect(overview.text).not.toContain('<Watch>');
     expect(overview.text).not.toMatch(/>\s*payMonitor\s*</);
     await custom.stop();
+  });
+});
+
+describe('Back link (layout)', () => {
+  it('shows on nested pages with the parent path as fallback, not on top-level or login pages', async () => {
+    const admin = await t.loginAs(ADMIN);
+    const detail = (await admin.get(`/webhook-monitors/${webhookId}`)).text;
+    expect(detail).toContain('data-back href="/webhook-monitors"');
+    expect((await admin.get(`/webhook-monitors/${webhookId}/edit`)).text).toContain(
+      `data-back href="/webhook-monitors/${webhookId}"`,
+    );
+    expect((await admin.get('/webhook-monitors/new')).text).toContain('data-back href="/webhook-monitors"');
+    expect((await admin.get('/webhook-monitors')).text).not.toContain('data-back');
+    expect((await admin.get('/')).text).not.toContain('data-back');
+    expect((await request(t.app).get('/login')).text).not.toContain('data-back');
   });
 });
