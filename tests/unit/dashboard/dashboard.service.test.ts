@@ -21,6 +21,7 @@ const base = {
   updatedBy: 'u',
   createdAt: at,
   updatedAt: at,
+  deletedAt: null,
 };
 
 const webhook = (

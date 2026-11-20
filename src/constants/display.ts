@@ -8,6 +8,7 @@ export const DISPLAY_STATUS = {
   DOWN: 'DOWN',
   ERROR: 'ERROR',
   PAUSED: 'PAUSED',
+  DELETED: 'DELETED',
   PENDING_FIRST_CHECK: 'PENDING_FIRST_CHECK',
 } as const;
 

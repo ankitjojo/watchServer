@@ -119,7 +119,7 @@ describe('master protection (FR-R3)', () => {
   it('allows deleting a normal recipient', async () => {
     const { svc } = setup();
     const n = await svc.create(normal('a@x.test'));
-    await expect(svc.remove(n.id, actor)).resolves.toBeUndefined();
+    await expect(svc.remove(n.id, actor)).resolves.toMatchObject({ isActive: false });
     await expect(svc.getById(n.id)).rejects.toBeInstanceOf(NotFoundError);
   });
 });

@@ -6,7 +6,13 @@ import { setFlash } from '../../utils/flash.js';
 import { renderPage } from '../../utils/renderPage.js';
 import { createRecipientValidation, idValidation, updateRecipientValidation } from './recipients.schemas.js';
 import type { RecipientsService } from './recipients.service.js';
-import { RECIPIENT_TYPE_OPTIONS, toRecipientFormValues, toRecipientRowView } from './recipients.view.js';
+import {
+  RECIPIENT_DELETED_COLUMNS,
+  RECIPIENT_TYPE_OPTIONS,
+  toRecipientDeletedRow,
+  toRecipientFormValues,
+  toRecipientRowView,
+} from './recipients.view.js';
 
 export interface RecipientsController {
   list: RequestHandler;
@@ -67,8 +73,13 @@ export function createRecipientsController(deps: {
 
   return {
     async list(_req, res) {
-      const rows = (await recipients.list()).map((r) => toRecipientRowView(r, timeZone));
-      await renderPage(res, 'pages/recipients/list', { pageTitle: 'Recipients', rows });
+      const [live, deleted] = await Promise.all([recipients.list(), recipients.listDeleted()]);
+      await renderPage(res, 'pages/recipients/list', {
+        pageTitle: 'Recipients',
+        rows: live.map((r) => toRecipientRowView(r, timeZone)),
+        deletedRows: deleted.map((r) => toRecipientDeletedRow(r, timeZone)),
+        deletedColumns: RECIPIENT_DELETED_COLUMNS,
+      });
     },
 
     async newForm(_req, res) {
@@ -150,8 +161,12 @@ export function createRecipientsController(deps: {
 
     async remove(req, res) {
       const { params } = idValidation.read(res);
-      await recipients.remove(params.id, actorOf(req.user));
-      setFlash(req, 'success', 'Recipient deleted');
+      const removed = await recipients.remove(params.id, actorOf(req.user));
+      setFlash(
+        req,
+        'success',
+        `Recipient ${removed.email} no longer receives alerts and was moved to Deleted records.`,
+      );
       res.redirect(303, '/recipients');
     },
   };

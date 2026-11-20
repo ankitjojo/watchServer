@@ -7,6 +7,9 @@ export interface WebhookMonitorsRepository {
   insert(doc: Omit<WebhookMonitorDoc, '_id'>): Promise<WebhookMonitor>;
   /** Soft-deleted monitors are invisible everywhere (TD-15). */
   findById(id: string): Promise<WebhookMonitor | null>;
+  /** Deleted monitors are readable only through these two explicit calls (soft delete). */
+  findByIdIncludingDeleted(id: string): Promise<WebhookMonitor | null>;
+  listDeleted(): Promise<WebhookMonitor[]>;
   list(): Promise<WebhookMonitor[]>;
   listEnabled(): Promise<WebhookMonitor[]>;
   update(id: string, update: WebhookMonitorUpdate): Promise<WebhookMonitor | null>;
@@ -29,6 +32,17 @@ export function createWebhookMonitorsRepository(db: Db): WebhookMonitorsReposito
     async findById(id) {
       const doc = await monitors.findOne({ _id: new ObjectId(id), ...ACTIVE });
       return doc ? toWebhookMonitor(doc) : null;
+    },
+    async findByIdIncludingDeleted(id) {
+      const doc = await monitors.findOne({ _id: new ObjectId(id) });
+      return doc ? toWebhookMonitor(doc) : null;
+    },
+    async listDeleted() {
+      const docs = await monitors
+        .find({ dDeletedAt: { $type: 'date' } })
+        .sort({ dDeletedAt: -1, _id: 1 })
+        .toArray();
+      return docs.map(toWebhookMonitor);
     },
     async list() {
       const docs = await monitors.find(ACTIVE).sort({ sName: 1, _id: 1 }).toArray();
@@ -60,7 +74,9 @@ export function createWebhookMonitorsRepository(db: Db): WebhookMonitorsReposito
     async softDelete(id, at, userId) {
       const doc = await monitors.findOneAndUpdate(
         { _id: new ObjectId(id), ...ACTIVE },
-        { $set: { dDeletedAt: at, bIsEnabled: false, iUpdatedBy: userId, dUpdatedAt: at } },
+        {
+          $set: { dDeletedAt: at, iDeletedBy: userId, bIsEnabled: false, iUpdatedBy: userId, dUpdatedAt: at },
+        },
         { returnDocument: 'after' },
       );
       return doc ? toWebhookMonitor(doc) : null;

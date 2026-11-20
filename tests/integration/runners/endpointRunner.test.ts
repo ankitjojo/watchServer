@@ -2,6 +2,9 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { ObjectId } from 'mongodb';
 import { COLLECTIONS } from '../../../src/constants/collections.js';
+import { createLogger } from '../../../src/logger/index.js';
+import { systemClock } from '../../../src/types/clock.js';
+import { createEndpointRunner } from '../../../src/modules/endpointMonitors/endpointMonitors.runner.js';
 import { systemProbeDeps } from '../../../src/modules/endpointMonitors/httpProbe.deps.js';
 import { createRecordingAlerts, type RecordingAlerts } from '../../helpers/fakeAlerts.js';
 import { startTestMongo, type TestMongo } from '../../helpers/memoryMongo.js';
@@ -138,5 +141,34 @@ describe('endpoint runner (FR-E2, FR-H1)', () => {
       await t.db.collection(COLLECTIONS.CHECKS).countDocuments({ iMonitorId: new ObjectId(monitor.id) }),
     ).toBe(1);
     expect((await t.services.endpointMonitors.getById(monitor.id)).state.lastResult).toBe('DOWN');
+  });
+});
+
+describe('deleted while a check is running (review L4, T3)', () => {
+  it('stores the check but creates no alert and changes no monitor state', async () => {
+    const monitor = await create('Deleted mid-check', '/fail', 0);
+    const runner = createEndpointRunner({
+      monitors: t.services.endpointMonitors,
+      checks: {
+        ...t.services.checks,
+        record: async (input) => {
+          await t.services.endpointMonitors.remove(monitor.id, actor);
+          return t.services.checks.record(input);
+        },
+      },
+      alerts,
+      clock: systemClock,
+      logger: createLogger({ level: 'silent' }),
+      probeDeps: { ...systemProbeDeps, sleep: () => Promise.resolve() },
+      probeOptions: { retryDelayMs: 0, timeoutMs: 2000, maxRedirects: 2 },
+    });
+    const check = await runner.run(monitor.id, 'SCHEDULE');
+    expect(check?.result).toBe('DOWN');
+    expect(
+      await t.db.collection(COLLECTIONS.CHECKS).countDocuments({ iMonitorId: new ObjectId(monitor.id) }),
+    ).toBe(1);
+    expect(alerts.outcomes).toHaveLength(0);
+    const kept = await t.services.endpointMonitors.getByIdIncludingDeleted(monitor.id);
+    expect(kept.state.lastResult ?? null).toBeNull();
   });
 });

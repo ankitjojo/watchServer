@@ -10,6 +10,8 @@ import type { EndpointMonitorValidations } from './endpointMonitors.schemas.js';
 import type { EndpointMonitorsService } from './endpointMonitors.service.js';
 import {
   endpointFormDefaults,
+  ENDPOINT_DELETED_COLUMNS,
+  toEndpointDeletedRow,
   toEndpointDetailView,
   toEndpointFormValues,
   toEndpointRowView,
@@ -80,8 +82,13 @@ export function createEndpointMonitorsController(deps: {
 
   return {
     async list(_req, res) {
-      const rows = (await monitors.list()).map((m) => toEndpointRowView(m, timeZone));
-      await renderPage(res, 'pages/endpointMonitors/list', { pageTitle: 'Endpoint monitors', rows });
+      const [live, deleted] = await Promise.all([monitors.list(), monitors.listDeleted()]);
+      await renderPage(res, 'pages/endpointMonitors/list', {
+        pageTitle: 'Endpoint monitors',
+        rows: live.map((m) => toEndpointRowView(m, timeZone)),
+        deletedRows: deleted.map((m) => toEndpointDeletedRow(m, timeZone)),
+        deletedColumns: ENDPOINT_DELETED_COLUMNS,
+      });
     },
 
     async newForm(_req, res) {
@@ -118,8 +125,9 @@ export function createEndpointMonitorsController(deps: {
 
     async detail(req, res) {
       const { params, query } = validations.detail.read(res);
-      const monitor = await monitors.getById(params.id);
-      const isAdmin = req.user?.role === 'ADMIN';
+      // Deleted monitors stay readable here, but nothing on the page can act on them.
+      const monitor = await monitors.getByIdIncludingDeleted(params.id);
+      const isAdmin = req.user?.role === 'ADMIN' && monitor.deletedAt === null;
       const extras = await detail.build({
         type: 'ENDPOINT',
         monitorId: monitor.id,
@@ -187,8 +195,12 @@ export function createEndpointMonitorsController(deps: {
 
     async remove(req, res) {
       const { params } = validations.id.read(res);
-      await monitors.remove(params.id, actorOf(req.user));
-      setFlash(req, 'success', 'Monitor deleted. Its history is kept.');
+      const removed = await monitors.remove(params.id, actorOf(req.user));
+      setFlash(
+        req,
+        'success',
+        `Monitor "${removed.serverName}" stopped and moved to Deleted records. Its history is kept.`,
+      );
       res.redirect(303, '/endpoint-monitors');
     },
   };

@@ -234,9 +234,18 @@ export function createApp(deps: AppDeps): Express {
       createAlertsPageController({
         alerts: deps.alerts,
         timeZone: config.display.timeZone,
+        // Deleted monitors stay listed so their old alerts can still be filtered (D10).
         monitorOptions: async () => [
           ...(await deps.webhookMonitors.list()).map((m) => ({ id: m.id, name: m.name })),
+          ...(await deps.webhookMonitors.listDeleted()).map((m) => ({
+            id: m.id,
+            name: `${m.name} (deleted)`,
+          })),
           ...(await deps.endpointMonitors.list()).map((m) => ({ id: m.id, name: m.serverName })),
+          ...(await deps.endpointMonitors.listDeleted()).map((m) => ({
+            id: m.id,
+            name: `${m.serverName} (deleted)`,
+          })),
         ],
       }),
     ),

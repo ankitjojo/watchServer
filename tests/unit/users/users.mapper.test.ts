@@ -37,6 +37,7 @@ describe('users.mapper (TD-16)', () => {
       lastLoginAt: null,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     });
   });
 

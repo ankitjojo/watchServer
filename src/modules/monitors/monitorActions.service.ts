@@ -88,14 +88,17 @@ export function createMonitorActionsService(deps: MonitorActionsDeps): MonitorAc
     },
 
     async listChecks(type, id, filter, page) {
-      if (type === 'webhook') await webhookMonitors.getById(id);
-      else await endpointMonitors.getById(id);
+      // Read-only history stays available for deleted monitors.
+      if (type === 'webhook') await webhookMonitors.getByIdIncludingDeleted(id);
+      else await endpointMonitors.getByIdIncludingDeleted(id);
       return checks.listForMonitor({ monitorId: id, ...filter }, page);
     },
 
     async series(type, id, range) {
       const monitor =
-        type === 'webhook' ? await webhookMonitors.getById(id) : await endpointMonitors.getById(id);
+        type === 'webhook'
+          ? await webhookMonitors.getByIdIncludingDeleted(id)
+          : await endpointMonitors.getByIdIncludingDeleted(id);
       const to = range.range === 'custom' ? (range.to ?? clock.now()) : clock.now();
       const from =
         range.range === 'custom' ? (range.from ?? to) : new Date(to.getTime() - RANGE_MS[range.range]);

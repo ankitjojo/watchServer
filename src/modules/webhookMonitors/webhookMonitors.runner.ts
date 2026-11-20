@@ -4,7 +4,7 @@ import { NotFoundError } from '../../errors/appError.js';
 import type { Logger } from '../../logger/index.js';
 import type { Clock } from '../../types/clock.js';
 import type { AlertsPort, MonitorSnapshot } from '../alerts/alerts.port.js';
-import type { CheckRunner } from '../checks/checkRunner.js';
+import { isStillRunnable, type CheckRunner } from '../checks/checkRunner.js';
 import type { ChecksService } from '../checks/checks.service.js';
 import type { Check, RecordCheckInput } from '../checks/checks.types.js';
 import { isSourceOutage, SourceDataError, sourceErrorCode } from '../sourceData/sourceData.errors.js';
@@ -120,6 +120,14 @@ export function createWebhookRunner(deps: WebhookRunnerDeps): CheckRunner {
         finishedAt: clock.now(),
         ...evaluation,
       });
+
+      if (!(await isStillRunnable(monitors, monitor.id, trigger))) {
+        logger.info(
+          { event: 'check.droppedDeleted', monitorId: monitor.id, checkId: check.id },
+          'Monitor was deleted or paused during the check: stored the check, skipped alerts and state',
+        );
+        return check;
+      }
 
       const snapshot = toWebhookSnapshot(monitor);
       let openIncidentId: string | null | undefined;

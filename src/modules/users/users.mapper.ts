@@ -10,6 +10,7 @@ export function toUser(doc: UserDoc): User {
     lastLoginAt: doc.dLastLoginAt ?? null,
     createdAt: doc.dCreatedAt,
     updatedAt: doc.dUpdatedAt,
+    deletedAt: doc.dDeletedAt ?? null,
   };
 }
 
@@ -28,6 +29,9 @@ export function toUserDoc(
     eRole: input.role,
     bIsActive: input.isActive,
     dLastLoginAt: null,
+    bIsDeleted: false,
+    dDeletedAt: null,
+    iDeletedBy: null,
     dCreatedAt: ctx.now,
     dUpdatedAt: ctx.now,
   };

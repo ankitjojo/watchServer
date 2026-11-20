@@ -10,6 +10,10 @@ export interface UserDoc {
   eRole: Role;
   bIsActive: boolean;
   dLastLoginAt: Date | null;
+  /** Soft delete (TD-36). A missing field on old documents means not deleted. */
+  bIsDeleted: boolean;
+  dDeletedAt: Date | null;
+  iDeletedBy: ObjectId | null;
   dCreatedAt: Date;
   dUpdatedAt: Date;
 }
@@ -24,6 +28,8 @@ export interface User {
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  /** Set once deleted: the user cannot sign in and is only listed under Deleted records. */
+  deletedAt: Date | null;
 }
 
 export interface UserCredentials {

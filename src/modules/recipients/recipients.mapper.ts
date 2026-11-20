@@ -9,6 +9,7 @@ export function toRecipient(doc: RecipientDoc): Recipient {
     type: doc.eType,
     createdAt: doc.dCreatedAt,
     updatedAt: doc.dUpdatedAt,
+    deletedAt: doc.dDeletedAt ?? null,
   };
 }
 
@@ -18,6 +19,9 @@ export function toRecipientDoc(input: RecipientInput, ctx: { now: Date }): Omit<
     sEmail: input.email,
     bIsActive: input.isActive,
     eType: input.type,
+    bIsDeleted: false,
+    dDeletedAt: null,
+    iDeletedBy: null,
     dCreatedAt: ctx.now,
     dUpdatedAt: ctx.now,
   };

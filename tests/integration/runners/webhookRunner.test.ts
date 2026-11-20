@@ -298,3 +298,34 @@ describe('alerting failures', () => {
     });
   });
 });
+
+describe('deleted while a check is running (review L4, T3)', () => {
+  it('stores the check but creates no alert and changes no monitor state', async () => {
+    const monitor = await createMonitor('Deleted mid-check', 'wh_stale', 2);
+    const runner = createWebhookRunner({
+      monitors: t.services.webhookMonitors,
+      sourceData: t.services.sourceData,
+      // The delete lands after the check was read but before it is stored.
+      checks: {
+        ...t.services.checks,
+        record: async (input) => {
+          await t.services.webhookMonitors.remove(monitor.id, actor);
+          return t.services.checks.record(input);
+        },
+      },
+      alerts,
+      clock: systemClock,
+      logger: createLogger({ level: 'silent' }),
+    });
+    const check = await runner.run(monitor.id, 'SCHEDULE');
+    expect(check?.result).toBe('STALE');
+    expect(
+      await t.db.collection(COLLECTIONS.CHECKS).countDocuments({ iMonitorId: new ObjectId(monitor.id) }),
+    ).toBe(1);
+    expect(alerts.outcomes).toHaveLength(0);
+    expect(alerts.sourceErrors).toHaveLength(0);
+    const kept = await t.services.webhookMonitors.getByIdIncludingDeleted(monitor.id);
+    expect(kept.state.lastResult ?? null).toBeNull();
+    expect(kept.state.currentStatus ?? null).toBeNull();
+  });
+});

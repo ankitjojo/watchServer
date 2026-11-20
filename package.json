@@ -14,6 +14,7 @@
     "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
     "start": "node dist/server.js",
     "db:indexes": "tsx scripts/ensure-indexes.ts",
+    "db:migrate-soft-delete": "tsx scripts/migrate-soft-delete.ts",
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "lint": "eslint .",
     "format": "prettier --write .",

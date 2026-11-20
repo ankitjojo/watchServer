@@ -18,6 +18,7 @@ export function toEndpointMonitor(doc: EndpointMonitorDoc): EndpointMonitor {
     updatedBy: doc.iUpdatedBy.toHexString(),
     createdAt: doc.dCreatedAt,
     updatedAt: doc.dUpdatedAt,
+    deletedAt: doc.dDeletedAt ?? null,
   };
 }
 

@@ -4,6 +4,7 @@ import { formatDurationInput } from '../../utils/duration.js';
 import { ALERT_MODE_LABEL } from '../../utils/labels.js';
 import { maskUrl } from '../../utils/maskUrl.js';
 import { formatUtc } from '../../utils/time.js';
+import type { DeletedRowView } from '../../utils/deletedRows.js';
 import type { EndpointMonitor } from './endpointMonitors.types.js';
 
 export interface EndpointMonitorRowView {
@@ -26,6 +27,8 @@ export interface EndpointMonitorDetailView extends EndpointMonitorRowView {
   isEnabled: boolean;
   created: string;
   updated: string;
+  /** UTC time of deletion; null for a live monitor. */
+  deletedOn: string | null;
 }
 
 const dash = '—';
@@ -55,6 +58,36 @@ export function toEndpointDetailView(monitor: EndpointMonitor, timeZone: string)
     isEnabled: monitor.isEnabled,
     created: formatUtc(monitor.createdAt, timeZone),
     updated: formatUtc(monitor.updatedAt, timeZone),
+    deletedOn: monitor.deletedAt ? formatUtc(monitor.deletedAt, timeZone) : null,
+  };
+}
+
+/** Same columns as the live list (minus Status/Next check, which mean nothing once deleted), plus the delete time. */
+export const ENDPOINT_DELETED_COLUMNS = [
+  'Server',
+  'URL',
+  'Status',
+  'Check',
+  'Retries',
+  'Last check',
+  'Last response',
+  'Deleted on (UTC)',
+];
+
+export function toEndpointDeletedRow(monitor: EndpointMonitor, timeZone: string): DeletedRowView {
+  const r = toEndpointRowView(monitor, timeZone);
+  return {
+    href: `/endpoint-monitors/${monitor.id}`,
+    cells: [
+      r.serverName,
+      r.url,
+      'Deleted',
+      r.checkEvery,
+      String(r.retryCount),
+      r.lastCheck,
+      r.lastResponse,
+      monitor.deletedAt ? formatUtc(monitor.deletedAt, timeZone) : dash,
+    ],
   };
 }
 

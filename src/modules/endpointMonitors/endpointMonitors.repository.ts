@@ -7,6 +7,9 @@ export interface EndpointMonitorsRepository {
   insert(doc: Omit<EndpointMonitorDoc, '_id'>): Promise<EndpointMonitor>;
   /** Soft-deleted monitors are invisible everywhere (TD-15). */
   findById(id: string): Promise<EndpointMonitor | null>;
+  /** Deleted monitors are readable only through these two explicit calls (soft delete). */
+  findByIdIncludingDeleted(id: string): Promise<EndpointMonitor | null>;
+  listDeleted(): Promise<EndpointMonitor[]>;
   list(): Promise<EndpointMonitor[]>;
   listEnabled(): Promise<EndpointMonitor[]>;
   update(id: string, update: EndpointMonitorUpdate): Promise<EndpointMonitor | null>;
@@ -29,6 +32,17 @@ export function createEndpointMonitorsRepository(db: Db): EndpointMonitorsReposi
     async findById(id) {
       const doc = await monitors.findOne({ _id: new ObjectId(id), ...ACTIVE });
       return doc ? toEndpointMonitor(doc) : null;
+    },
+    async findByIdIncludingDeleted(id) {
+      const doc = await monitors.findOne({ _id: new ObjectId(id) });
+      return doc ? toEndpointMonitor(doc) : null;
+    },
+    async listDeleted() {
+      const docs = await monitors
+        .find({ dDeletedAt: { $type: 'date' } })
+        .sort({ dDeletedAt: -1, _id: 1 })
+        .toArray();
+      return docs.map(toEndpointMonitor);
     },
     async list() {
       const docs = await monitors.find(ACTIVE).sort({ sServerName: 1, _id: 1 }).toArray();
@@ -60,7 +74,9 @@ export function createEndpointMonitorsRepository(db: Db): EndpointMonitorsReposi
     async softDelete(id, at, userId) {
       const doc = await monitors.findOneAndUpdate(
         { _id: new ObjectId(id), ...ACTIVE },
-        { $set: { dDeletedAt: at, bIsEnabled: false, iUpdatedBy: userId, dUpdatedAt: at } },
+        {
+          $set: { dDeletedAt: at, iDeletedBy: userId, bIsEnabled: false, iUpdatedBy: userId, dUpdatedAt: at },
+        },
         { returnDocument: 'after' },
       );
       return doc ? toEndpointMonitor(doc) : null;

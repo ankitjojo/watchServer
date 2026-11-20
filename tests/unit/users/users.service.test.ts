@@ -111,13 +111,13 @@ describe('users.service', () => {
       await expect(
         users.update(a.id, { name: 'A', email: 'a@x.test', role: 'VIEWER', isActive: true }, actor),
       ).resolves.toMatchObject({ role: 'VIEWER' });
-      await expect(users.remove(a.id, actor)).resolves.toBeUndefined();
+      await expect(users.remove(a.id, actor)).resolves.toMatchObject({ isActive: false });
     });
     it('does not block editing a viewer', async () => {
       const { users } = setup();
       await users.create(admin('a@x.test'));
       const v = await users.create(viewer('v@x.test'));
-      await expect(users.remove(v.id, actor)).resolves.toBeUndefined();
+      await expect(users.remove(v.id, actor)).resolves.toMatchObject({ isActive: false });
     });
   });
 

@@ -31,11 +31,28 @@ describe('ensureMonitorDbIndexes', () => {
     await expect(ensureMonitorDbIndexes(db)).resolves.toBeUndefined();
   });
 
-  it('makes user and recipient emails unique', async () => {
-    await db.collection(COLLECTIONS.USERS).insertOne({ sEmail: 'a@x.com' });
-    expect(await rejects(db.collection(COLLECTIONS.USERS).insertOne({ sEmail: 'a@x.com' }))).toBe(true);
-    await db.collection(COLLECTIONS.RECIPIENTS).insertOne({ sEmail: 'a@x.com' });
-    expect(await rejects(db.collection(COLLECTIONS.RECIPIENTS).insertOne({ sEmail: 'a@x.com' }))).toBe(true);
+  it('makes user and recipient emails unique only among non-deleted records (TD-36)', async () => {
+    for (const name of [COLLECTIONS.USERS, COLLECTIONS.RECIPIENTS]) {
+      const col = db.collection(name);
+      await col.insertOne({ sEmail: 'a@x.com', bIsDeleted: false });
+      expect(await rejects(col.insertOne({ sEmail: 'a@x.com', bIsDeleted: false }))).toBe(true);
+      await col.updateOne({ sEmail: 'a@x.com' }, { $set: { bIsDeleted: true } });
+      await expect(col.insertOne({ sEmail: 'a@x.com', bIsDeleted: false })).resolves.toBeDefined();
+      // Two deleted records may share an email.
+      await col.updateOne({ sEmail: 'a@x.com', bIsDeleted: false }, { $set: { bIsDeleted: true } });
+      await expect(col.insertOne({ sEmail: 'a@x.com', bIsDeleted: true })).resolves.toBeDefined();
+    }
+  });
+
+  it('creates only the partial email index and never drops the legacy plain one at startup', async () => {
+    const legacyDb = mongo.newDb('legacy');
+    await legacyDb.collection(COLLECTIONS.USERS).createIndex({ sEmail: 1 }, { unique: true }, undefined);
+    await ensureMonitorDbIndexes(legacyDb);
+    const names = (await legacyDb.collection(COLLECTIONS.USERS).indexes()).map((i) => i.name);
+    expect(names).toEqual(expect.arrayContaining(['sEmail_1', 'sEmail_1_active_unique']));
+    const fresh = (await db.collection(COLLECTIONS.USERS).indexes()).map((i) => i.name);
+    expect(fresh).toContain('sEmail_1_active_unique');
+    expect(fresh).not.toContain('sEmail_1');
   });
 
   it('makes monitor names unique only among non-deleted monitors', async () => {

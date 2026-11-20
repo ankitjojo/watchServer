@@ -24,9 +24,13 @@ export interface WebhookMonitorsService {
   list(): Promise<WebhookMonitor[]>;
   listEnabled(): Promise<WebhookMonitor[]>;
   getById(id: string): Promise<WebhookMonitor>;
+  /** Read-only access for the Deleted records page and the deleted monitor's detail page. */
+  getByIdIncludingDeleted(id: string): Promise<WebhookMonitor>;
+  listDeleted(): Promise<WebhookMonitor[]>;
   create(input: WebhookMonitorInput, actor: AuditActor): Promise<SaveResult>;
   update(id: string, input: WebhookMonitorInput, actor: AuditActor): Promise<SaveResult>;
-  remove(id: string, actor: AuditActor): Promise<void>;
+  /** Soft delete (stop + keep): returns the deleted monitor. */
+  remove(id: string, actor: AuditActor): Promise<WebhookMonitor>;
   /** FR-D3 pause/resume. Idempotent. Pausing never closes an open incident. */
   setEnabled(id: string, isEnabled: boolean, actor: AuditActor): Promise<WebhookMonitor>;
   /** Used by runners and the scheduler: updates the monitor's `oState` only. */
@@ -102,6 +106,12 @@ export function createWebhookMonitorsService(deps: WebhookMonitorsServiceDeps): 
     list: () => repo.list(),
     listEnabled: () => repo.listEnabled(),
     getById: load,
+    async getByIdIncludingDeleted(id) {
+      const monitor = await repo.findByIdIncludingDeleted(id);
+      if (!monitor) throw new NotFoundError('Monitor not found');
+      return monitor;
+    },
+    listDeleted: () => repo.listDeleted(),
 
     async create(input, actor) {
       const { hasIndex, warnings } = await inspect(input);
@@ -198,6 +208,7 @@ export function createWebhookMonitorsService(deps: WebhookMonitorsServiceDeps): 
         entityId: id,
         before,
       });
+      return deleted;
     },
   };
 }

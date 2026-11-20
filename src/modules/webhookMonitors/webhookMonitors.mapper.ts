@@ -21,6 +21,7 @@ export function toWebhookMonitor(doc: WebhookMonitorDoc): WebhookMonitor {
     updatedBy: doc.iUpdatedBy.toHexString(),
     createdAt: doc.dCreatedAt,
     updatedAt: doc.dUpdatedAt,
+    deletedAt: doc.dDeletedAt ?? null,
   };
 }
 

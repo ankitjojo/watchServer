@@ -1,4 +1,4 @@
-import type { Db } from 'mongodb';
+import { ObjectId, type Db } from 'mongodb';
 import { ensureMonitorDbIndexes } from '../../../src/database/indexes.js';
 import { isDuplicateKeyError } from '../../../src/errors/mongoErrors.js';
 import { toRecipientDoc } from '../../../src/modules/recipients/recipients.mapper.js';
@@ -57,7 +57,9 @@ describe('recipients repository', () => {
     expect(await repo.countMasters()).toBe(1);
     const created = await add('edit@x.test', 'NORMAL', true);
     expect(await repo.update(created.id, { sName: 'Edited' })).toMatchObject({ name: 'Edited' });
-    expect(await repo.delete(created.id)).toBe(true);
+    expect(await repo.softDelete(created.id, now, new ObjectId())).toMatchObject({ isActive: false });
+    expect(await repo.findById(created.id)).toBeNull();
+    expect(await repo.softDelete(created.id, now, new ObjectId())).toBeNull();
     expect(await repo.findById(created.id)).toBeNull();
   });
 });

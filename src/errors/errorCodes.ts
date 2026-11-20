@@ -12,6 +12,7 @@ export const ERROR_CODE = {
   SCHEDULER_STANDBY: 'SCHEDULER_STANDBY',
   LAST_ADMIN: 'LAST_ADMIN',
   MASTER_PROTECTED: 'MASTER_PROTECTED',
+  EMAIL_IN_USE: 'EMAIL_IN_USE',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];

@@ -6,7 +6,13 @@ import { setFlash } from '../../utils/flash.js';
 import { renderPage } from '../../utils/renderPage.js';
 import type { UsersService } from './users.service.js';
 import { createUserValidation, idValidation, updateUserValidation } from './users.schemas.js';
-import { USER_ROLE_OPTIONS, toUserFormValues, toUserRowView } from './users.view.js';
+import {
+  USER_DELETED_COLUMNS,
+  USER_ROLE_OPTIONS,
+  toUserDeletedRow,
+  toUserFormValues,
+  toUserRowView,
+} from './users.view.js';
 
 export interface UsersController {
   list: RequestHandler;
@@ -68,8 +74,13 @@ export function createUsersController(deps: { users: UsersService; timeZone: str
 
   return {
     async list(_req, res) {
-      const rows = (await users.list()).map((u) => toUserRowView(u, timeZone));
-      await renderPage(res, 'pages/users/list', { pageTitle: 'Users', rows });
+      const [live, deleted] = await Promise.all([users.list(), users.listDeleted()]);
+      await renderPage(res, 'pages/users/list', {
+        pageTitle: 'Users',
+        rows: live.map((u) => toUserRowView(u, timeZone)),
+        deletedRows: deleted.map((u) => toUserDeletedRow(u, timeZone)),
+        deletedColumns: USER_DELETED_COLUMNS,
+      });
     },
 
     async newForm(_req, res) {
@@ -139,8 +150,12 @@ export function createUsersController(deps: { users: UsersService; timeZone: str
 
     async remove(req, res) {
       const { params } = idValidation.read(res);
-      await users.remove(params.id, actorOf(req.user));
-      setFlash(req, 'success', 'User deleted');
+      const removed = await users.remove(params.id, actorOf(req.user));
+      setFlash(
+        req,
+        'success',
+        `User ${removed.email} can no longer sign in and was moved to Deleted records.`,
+      );
       res.redirect(303, '/users');
     },
   };

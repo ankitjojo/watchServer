@@ -1,5 +1,6 @@
 import { RECIPIENT_TYPE } from '../../constants/recipientType.js';
 import { formatUtc } from '../../utils/time.js';
+import type { DeletedRowView } from '../../utils/deletedRows.js';
 import type { Recipient } from './recipients.types.js';
 
 export interface RecipientRowView {
@@ -27,3 +28,17 @@ export function toRecipientFormValues(recipient: Recipient): Record<string, unkn
 }
 
 export const RECIPIENT_TYPE_OPTIONS = [RECIPIENT_TYPE.NORMAL, RECIPIENT_TYPE.MASTER] as const;
+
+export const RECIPIENT_DELETED_COLUMNS = ['Name', 'Email', 'Type', 'Status', 'Deleted on (UTC)'];
+
+export function toRecipientDeletedRow(recipient: Recipient, timeZone: string): DeletedRowView {
+  return {
+    cells: [
+      recipient.name,
+      recipient.email,
+      recipient.type === RECIPIENT_TYPE.MASTER ? 'Master' : 'Normal',
+      'Deleted',
+      recipient.deletedAt ? formatUtc(recipient.deletedAt, timeZone) : '—',
+    ],
+  };
+}

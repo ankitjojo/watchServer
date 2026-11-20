@@ -18,9 +18,13 @@ export interface EndpointMonitorsService {
   list(): Promise<EndpointMonitor[]>;
   listEnabled(): Promise<EndpointMonitor[]>;
   getById(id: string): Promise<EndpointMonitor>;
+  /** Read-only access for the Deleted records page and the deleted monitor's detail page. */
+  getByIdIncludingDeleted(id: string): Promise<EndpointMonitor>;
+  listDeleted(): Promise<EndpointMonitor[]>;
   create(input: EndpointMonitorInput, actor: AuditActor): Promise<EndpointMonitor>;
   update(id: string, input: EndpointMonitorInput, actor: AuditActor): Promise<EndpointMonitor>;
-  remove(id: string, actor: AuditActor): Promise<void>;
+  /** Soft delete (stop + keep): returns the deleted monitor. */
+  remove(id: string, actor: AuditActor): Promise<EndpointMonitor>;
   /** FR-D3 pause/resume. Idempotent. Pausing never closes an open incident. */
   setEnabled(id: string, isEnabled: boolean, actor: AuditActor): Promise<EndpointMonitor>;
   /** Used by runners and the scheduler: updates the monitor's `oState` only. */
@@ -64,6 +68,12 @@ export function createEndpointMonitorsService(deps: EndpointMonitorsServiceDeps)
     list: () => repo.list(),
     listEnabled: () => repo.listEnabled(),
     getById: load,
+    async getByIdIncludingDeleted(id) {
+      const monitor = await repo.findByIdIncludingDeleted(id);
+      if (!monitor) throw new NotFoundError('Monitor not found');
+      return monitor;
+    },
+    listDeleted: () => repo.listDeleted(),
 
     async create(input, actor) {
       let monitor: EndpointMonitor;
@@ -145,6 +155,7 @@ export function createEndpointMonitorsService(deps: EndpointMonitorsServiceDeps)
         entityId: id,
         before,
       });
+      return deleted;
     },
   };
 }

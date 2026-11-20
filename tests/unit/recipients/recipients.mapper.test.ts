@@ -18,6 +18,9 @@ describe('recipients.mapper (TD-16)', () => {
       sEmail: 'ann@x.test',
       bIsActive: true,
       eType: 'MASTER',
+      bIsDeleted: false,
+      dDeletedAt: null,
+      iDeletedBy: null,
       dCreatedAt: now,
       dUpdatedAt: now,
     });
@@ -29,6 +32,7 @@ describe('recipients.mapper (TD-16)', () => {
       type: 'MASTER',
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     });
   });
 

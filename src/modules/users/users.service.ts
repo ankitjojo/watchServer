@@ -6,6 +6,7 @@ import type { PasswordHasher } from '../../utils/password.js';
 import { AUDIT_ACTION } from '../../constants/auditAction.js';
 import { AUDIT_ENTITY_TYPE } from '../../constants/auditEntityType.js';
 import type { AuditActor, AuditService } from '../audit/audit.types.js';
+import { toObjectId } from '../../utils/objectId.js';
 import { toUserDoc, toUserUpdate } from './users.mapper.js';
 import type { UsersRepository } from './users.repository.js';
 import { passwordSchema } from './users.schemas.js';
@@ -13,6 +14,8 @@ import type { CreateUserInput, UpdateUserInput, User } from './users.types.js';
 
 export interface UsersService {
   list(): Promise<User[]>;
+  /** Newest deletion first (the Deleted records dropdown). */
+  listDeleted(): Promise<User[]>;
   getById(id: string): Promise<User>;
   /** Null when the user does not exist or is inactive. Used on every request. */
   getActiveById(id: string): Promise<User | null>;
@@ -20,7 +23,13 @@ export interface UsersService {
   /** `actor` is absent only for the startup seed, which is logged instead of audited. */
   create(input: CreateUserInput, actor?: AuditActor): Promise<User>;
   update(id: string, input: UpdateUserInput, actor: AuditActor): Promise<User>;
-  remove(id: string, actor: AuditActor): Promise<void>;
+  /** Soft delete (TD-36): cannot sign in, session ends on its next request, kept. Returns the deleted user. */
+  remove(id: string, actor: AuditActor): Promise<User>;
+  /**
+   * Not routed yet. Clears the deleted markers; the user comes back inactive. Fails with EMAIL_IN_USE
+   * when an active user has taken the email since.
+   */
+  restore(id: string, actor: AuditActor): Promise<User>;
   /** Returns the user for valid credentials of an active user, otherwise null. Constant-time-ish. */
   authenticate(email: string, password: string): Promise<User | null>;
   recordLogin(id: string, at: Date): Promise<void>;
@@ -62,6 +71,7 @@ export function createUsersService(deps: UsersServiceDeps): UsersService {
 
   return {
     list: () => repo.list(),
+    listDeleted: () => repo.listDeleted(),
     getById: load,
     async getActiveById(id) {
       const user = await repo.findById(id);
@@ -132,14 +142,45 @@ export function createUsersService(deps: UsersServiceDeps): UsersService {
     async remove(id, actor) {
       const before = await load(id);
       await assertNotLastAdmin(before, false);
-      if (!(await repo.delete(id))) throw new NotFoundError('User not found');
+      const deleted = await repo.softDelete(id, clock.now(), toObjectId(actor.id));
+      if (!deleted) throw new NotFoundError('User not found');
       await audit.record({
         actor,
         action: AUDIT_ACTION.DELETE,
         entityType: AUDIT_ENTITY_TYPE.USER,
         entityId: id,
         before,
+        after: deleted,
       });
+      return deleted;
+    },
+
+    async restore(id, actor) {
+      const before = await repo.findByIdIncludingDeleted(id);
+      if (!before?.deletedAt) throw new NotFoundError('Deleted user not found');
+      let restored: User | null;
+      try {
+        restored = await repo.restore(id, clock.now());
+      } catch (err) {
+        if (isDuplicateKeyError(err)) {
+          throw new ConflictError(
+            'An active user already uses this email, so the deleted one cannot be restored',
+            ERROR_CODE.EMAIL_IN_USE,
+            { details: { field: 'email' } },
+          );
+        }
+        throw err;
+      }
+      if (!restored) throw new NotFoundError('Deleted user not found');
+      await audit.record({
+        actor,
+        action: AUDIT_ACTION.RESTORE,
+        entityType: AUDIT_ENTITY_TYPE.USER,
+        entityId: id,
+        before,
+        after: restored,
+      });
+      return restored;
     },
 
     async authenticate(email, password) {

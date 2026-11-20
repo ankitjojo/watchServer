@@ -13,7 +13,9 @@ import {
   ALERT_MODE_OPTIONS,
   DURATION_UNIT_OPTIONS,
   WEBHOOK_FORM_DEFAULTS,
+  toWebhookDeletedRow,
   toWebhookDetailView,
+  WEBHOOK_DELETED_COLUMNS,
   toWebhookFormValues,
   toWebhookRowView,
 } from './webhookMonitors.view.js';
@@ -101,8 +103,13 @@ export function createWebhookMonitorsController(deps: {
 
   return {
     async list(_req, res) {
-      const rows = (await monitors.list()).map((m) => toWebhookRowView(m, timeZone));
-      await renderPage(res, 'pages/webhookMonitors/list', { pageTitle: 'Webhook monitors', rows });
+      const [live, deleted] = await Promise.all([monitors.list(), monitors.listDeleted()]);
+      await renderPage(res, 'pages/webhookMonitors/list', {
+        pageTitle: 'Webhook monitors',
+        rows: live.map((m) => toWebhookRowView(m, timeZone)),
+        deletedRows: deleted.map((m) => toWebhookDeletedRow(m, timeZone)),
+        deletedColumns: WEBHOOK_DELETED_COLUMNS,
+      });
     },
 
     async newForm(_req, res) {
@@ -134,8 +141,9 @@ export function createWebhookMonitorsController(deps: {
 
     async detail(req, res) {
       const { params, query } = validations.detail.read(res);
-      const monitor = await monitors.getById(params.id);
-      const isAdmin = req.user?.role === 'ADMIN';
+      // Deleted monitors stay readable here, but nothing on the page can act on them.
+      const monitor = await monitors.getByIdIncludingDeleted(params.id);
+      const isAdmin = req.user?.role === 'ADMIN' && monitor.deletedAt === null;
       const extras = await detail.build({
         type: 'WEBHOOK',
         monitorId: monitor.id,
@@ -204,8 +212,12 @@ export function createWebhookMonitorsController(deps: {
 
     async remove(req, res) {
       const { params } = validations.id.read(res);
-      await monitors.remove(params.id, actorOf(req.user));
-      setFlash(req, 'success', 'Monitor deleted. Its history is kept.');
+      const removed = await monitors.remove(params.id, actorOf(req.user));
+      setFlash(
+        req,
+        'success',
+        `Monitor "${removed.name}" stopped and moved to Deleted records. Its history is kept.`,
+      );
       res.redirect(303, '/webhook-monitors');
     },
   };

@@ -4,6 +4,7 @@ import { RECIPIENT_TYPE } from '../../constants/recipientType.js';
 import { ConflictError, NotFoundError } from '../../errors/appError.js';
 import { ERROR_CODE } from '../../errors/errorCodes.js';
 import { isDuplicateKeyError } from '../../errors/mongoErrors.js';
+import { toObjectId } from '../../utils/objectId.js';
 import type { Clock } from '../../types/clock.js';
 import type { AuditActor, AuditService } from '../audit/audit.types.js';
 import { toAlertRecipient, toRecipientDoc, toRecipientUpdate } from './recipients.mapper.js';
@@ -12,10 +13,18 @@ import type { AlertRecipient, Recipient, RecipientAudience, RecipientInput } fro
 
 export interface RecipientsService {
   list(): Promise<Recipient[]>;
+  /** Newest deletion first (the Deleted records dropdown). */
+  listDeleted(): Promise<Recipient[]>;
   getById(id: string): Promise<Recipient>;
   create(input: RecipientInput, actor?: AuditActor): Promise<Recipient>;
   update(id: string, input: RecipientInput, actor: AuditActor): Promise<Recipient>;
-  remove(id: string, actor: AuditActor): Promise<void>;
+  /** Soft delete (TD-36): inactive, kept, no longer in any new alert audience. Returns the deleted recipient. */
+  remove(id: string, actor: AuditActor): Promise<Recipient>;
+  /**
+   * Not routed yet. Clears the deleted markers; the recipient comes back inactive. Fails with
+   * EMAIL_IN_USE when an active recipient has taken the email since.
+   */
+  restore(id: string, actor: AuditActor): Promise<Recipient>;
   countMasters(): Promise<number>;
   /** Promotes an existing recipient to an active MASTER (used by the startup seed). */
   ensureMaster(email: string, name: string): Promise<Recipient>;
@@ -25,6 +34,13 @@ export interface RecipientsService {
    */
   resolveAlertRecipients(audience: RecipientAudience): Promise<AlertRecipient[]>;
 }
+
+const emailInUse = (): ConflictError =>
+  new ConflictError(
+    'An active recipient already uses this email, so the deleted one cannot be restored',
+    ERROR_CODE.EMAIL_IN_USE,
+    { details: { field: 'email' } },
+  );
 
 const duplicateEmail = (): ConflictError =>
   new ConflictError('A recipient with this email already exists', ERROR_CODE.CONFLICT, {
@@ -60,6 +76,7 @@ export function createRecipientsService(deps: {
 
   return {
     list: () => repo.list(),
+    listDeleted: () => repo.listDeleted(),
     getById: load,
     countMasters: () => repo.countMasters(),
 
@@ -110,19 +127,61 @@ export function createRecipientsService(deps: {
       if (before.type === RECIPIENT_TYPE.MASTER) {
         throw new ConflictError('A master recipient cannot be deleted', ERROR_CODE.MASTER_PROTECTED);
       }
-      if (!(await repo.delete(id))) throw new NotFoundError('Recipient not found');
+      const deleted = await repo.softDelete(id, clock.now(), toObjectId(actor.id));
+      if (!deleted) throw new NotFoundError('Recipient not found');
       await audit.record({
         actor,
         action: AUDIT_ACTION.DELETE,
         entityType: AUDIT_ENTITY_TYPE.RECIPIENT,
         entityId: id,
         before,
+        after: deleted,
       });
+      return deleted;
+    },
+
+    async restore(id, actor) {
+      const before = await repo.findByIdIncludingDeleted(id);
+      if (!before?.deletedAt) throw new NotFoundError('Deleted recipient not found');
+      const holder = await repo.findByEmail(before.email);
+      if (holder && holder.id !== id && holder.deletedAt === null) throw emailInUse();
+      let restored: Recipient | null;
+      try {
+        restored = await repo.restore(id, clock.now());
+      } catch (err) {
+        if (isDuplicateKeyError(err)) throw emailInUse();
+        throw err;
+      }
+      if (!restored) throw new NotFoundError('Deleted recipient not found');
+      await audit.record({
+        actor,
+        action: AUDIT_ACTION.RESTORE,
+        entityType: AUDIT_ENTITY_TYPE.RECIPIENT,
+        entityId: id,
+        before,
+        after: restored,
+      });
+      return restored;
     },
 
     async ensureMaster(email, name) {
       const existing = await repo.findByEmail(email);
       if (!existing) return createRecord({ name, email, type: RECIPIENT_TYPE.MASTER, isActive: true });
+      if (existing.deletedAt) {
+        // The env master email belongs to a deleted recipient: bring it back as the master (FR-R3).
+        let restored: Recipient | null;
+        try {
+          restored = await repo.restore(existing.id, clock.now(), {
+            eType: RECIPIENT_TYPE.MASTER,
+            bIsActive: true,
+          });
+        } catch (err) {
+          if (isDuplicateKeyError(err)) throw emailInUse();
+          throw err;
+        }
+        if (!restored) throw new NotFoundError('Recipient not found');
+        return restored;
+      }
       if (existing.type === RECIPIENT_TYPE.MASTER) return existing;
       const promoted = await repo.update(
         existing.id,

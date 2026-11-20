@@ -12,6 +12,12 @@
   </div>
 </div>
 
+<% if (monitor.deletedOn) { %>
+<div class="flash flash-warning" role="status">
+  Deleted on <%= monitor.deletedOn %> UTC. This monitor no longer runs; its history is kept here read-only.
+</div>
+<% } %>
+
 <% if (can.edit) { %>
 <section class="card" id="monitor-actions" data-monitor-type="endpoint" data-monitor-id="<%= monitor.id %>">
   <h2>Actions</h2>

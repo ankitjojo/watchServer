@@ -20,6 +20,8 @@ export interface WebhookMonitorDoc {
   oState: MonitorStateDoc;
   /** Always stored (null when active): partial unique indexes need an explicit null. */
   dDeletedAt: Date | null;
+  /** Who deleted it. Absent on monitors deleted before this field existed. */
+  iDeletedBy?: ObjectId | null;
   iCreatedBy: ObjectId;
   iUpdatedBy: ObjectId;
   dCreatedAt: Date;
@@ -43,6 +45,8 @@ export interface WebhookMonitor {
   updatedBy: string;
   createdAt: Date;
   updatedAt: Date;
+  /** Set once deleted: the monitor stopped and is only listed under Deleted records. */
+  deletedAt: Date | null;
 }
 
 /** Validated form input (FR-W1). */

@@ -4,6 +4,7 @@ import { DISPLAY_STATUS_LABEL, displayStatus } from '../../utils/displayStatus.j
 import { formatDurationInput, formatHumanDuration } from '../../utils/duration.js';
 import { ALERT_MODE_LABEL } from '../../utils/labels.js';
 import { formatUtc } from '../../utils/time.js';
+import type { DeletedRowView } from '../../utils/deletedRows.js';
 import type { WebhookMonitor } from './webhookMonitors.types.js';
 
 export interface WebhookMonitorRowView {
@@ -28,6 +29,8 @@ export interface WebhookMonitorDetailView extends WebhookMonitorRowView {
   hasIndexWarning: boolean;
   created: string;
   updated: string;
+  /** UTC time of deletion; null for a live monitor. */
+  deletedOn: string | null;
 }
 
 const dash = '—';
@@ -60,6 +63,38 @@ export function toWebhookDetailView(monitor: WebhookMonitor, timeZone: string): 
     hasIndexWarning: !monitor.hasTimestampIndexAtSave,
     created: formatUtc(monitor.createdAt, timeZone),
     updated: formatUtc(monitor.updatedAt, timeZone),
+    deletedOn: monitor.deletedAt ? formatUtc(monitor.deletedAt, timeZone) : null,
+  };
+}
+
+/** Same columns as the live list (minus Status/Next check, which mean nothing once deleted), plus the delete time. */
+export const WEBHOOK_DELETED_COLUMNS = [
+  'Name',
+  'Gateway',
+  'Collection',
+  'Status',
+  'Check',
+  'Threshold',
+  'Last check',
+  'Last doc age',
+  'Deleted on (UTC)',
+];
+
+export function toWebhookDeletedRow(monitor: WebhookMonitor, timeZone: string): DeletedRowView {
+  const r = toWebhookRowView(monitor, timeZone);
+  return {
+    href: `/webhook-monitors/${monitor.id}`,
+    cells: [
+      r.name,
+      r.gatewayName,
+      r.collection,
+      'Deleted',
+      r.checkEvery,
+      r.threshold,
+      r.lastCheck,
+      r.lastAge,
+      monitor.deletedAt ? formatUtc(monitor.deletedAt, timeZone) : dash,
+    ],
   };
 }
 

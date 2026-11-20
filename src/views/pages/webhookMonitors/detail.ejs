@@ -12,6 +12,12 @@
   </div>
 </div>
 
+<% if (monitor.deletedOn) { %>
+<div class="flash flash-warning" role="status">
+  Deleted on <%= monitor.deletedOn %> UTC. This monitor no longer runs; its history is kept here read-only.
+</div>
+<% } %>
+
 <% if (monitor.hasIndexWarning) { %>
 <div class="flash flash-warning" role="status">
   No index starts with <strong><%= monitor.timestampKey %></strong> on <strong><%= monitor.collection %></strong> (checked when saved), so every check scans the collection. Ask the source backend owners to add one; <%= appName %> cannot create it.
