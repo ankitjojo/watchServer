@@ -29,7 +29,7 @@ export function toRecipientFormValues(recipient: Recipient): Record<string, unkn
 
 export const RECIPIENT_TYPE_OPTIONS = [RECIPIENT_TYPE.NORMAL, RECIPIENT_TYPE.MASTER] as const;
 
-export const RECIPIENT_DELETED_COLUMNS = ['Name', 'Email', 'Type', 'Status', 'Deleted on (UTC)'];
+export const RECIPIENT_DELETED_COLUMNS = ['Name', 'Email', 'Type', 'Status', 'Deleted on'];
 
 export function toRecipientDeletedRow(recipient: Recipient, timeZone: string): DeletedRowView {
   return {

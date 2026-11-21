@@ -29,7 +29,7 @@ export interface WebhookMonitorDetailView extends WebhookMonitorRowView {
   hasIndexWarning: boolean;
   created: string;
   updated: string;
-  /** UTC time of deletion; null for a live monitor. */
+  /** Time of deletion (display zone); null for a live monitor. */
   deletedOn: string | null;
 }
 
@@ -77,7 +77,7 @@ export const WEBHOOK_DELETED_COLUMNS = [
   'Threshold',
   'Last check',
   'Last doc age',
-  'Deleted on (UTC)',
+  'Deleted on',
 ];
 
 export function toWebhookDeletedRow(monitor: WebhookMonitor, timeZone: string): DeletedRowView {

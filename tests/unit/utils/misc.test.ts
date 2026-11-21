@@ -1,7 +1,7 @@
 import { decodeCursor, encodeCursor } from '../../../src/utils/cursor.js';
 import { escapeHtml } from '../../../src/utils/escapeHtml.js';
 import { maskUrl } from '../../../src/utils/maskUrl.js';
-import { formatUtc } from '../../../src/utils/time.js';
+import { dayBounds, formatUtc, zoneLabel } from '../../../src/utils/time.js';
 import { uriHost } from '../../../src/utils/uriHost.js';
 import { ValidationError } from '../../../src/errors/appError.js';
 
@@ -39,6 +39,14 @@ describe('formatUtc', () => {
   it('formats with the UTC label (FR-D7)', () => {
     expect(formatUtc(new Date('2026-11-18T14:05:09Z'))).toBe('2026-11-18 14:05:09 UTC');
   });
+  it('formats Asia/Kolkata as IST (UTC+05:30), rolling over the date', () => {
+    expect(formatUtc(new Date('2026-11-18T14:05:09Z'), 'Asia/Kolkata')).toBe('2026-11-18 19:35:09 IST');
+    expect(formatUtc(new Date('2026-11-18T19:00:00Z'), 'Asia/Kolkata')).toBe('2026-11-19 00:30:00 IST');
+  });
+  it('labels zones', () => {
+    expect(zoneLabel('Asia/Kolkata')).toBe('IST');
+    expect(zoneLabel('UTC')).toBe('UTC');
+  });
   it('renders midnight as 00, not 24', () => {
     expect(formatUtc(new Date('2026-11-18T00:00:00Z'))).toBe('2026-11-18 00:00:00 UTC');
   });
@@ -55,4 +63,17 @@ describe('cursor', () => {
       expect(() => decodeCursor(bad)).toThrow(ValidationError);
     },
   );
+});
+
+describe('dayBounds', () => {
+  it('is the whole IST day as UTC instants', () => {
+    const { start, end } = dayBounds('2026-11-21', 'Asia/Kolkata');
+    expect(start.toISOString()).toBe('2026-11-20T18:30:00.000Z');
+    expect(end.toISOString()).toBe('2026-11-21T18:29:59.999Z');
+  });
+  it('is unchanged for UTC', () => {
+    const { start, end } = dayBounds('2026-11-21', 'UTC');
+    expect(start.toISOString()).toBe('2026-11-21T00:00:00.000Z');
+    expect(end.toISOString()).toBe('2026-11-21T23:59:59.999Z');
+  });
 });

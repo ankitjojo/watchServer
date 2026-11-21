@@ -50,7 +50,7 @@ it('shows the closed incident with its start, end and duration on the monitor pa
   const page = await viewer.get(`/webhook-monitors/${monitorId}`);
   expect(page.status).toBe(200);
   const incidents = /<h2>Incidents<\/h2>[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/.exec(page.text)?.[1] ?? '';
-  expect(incidents).toContain('UTC');
+  expect(incidents).toContain('IST');
   expect(incidents).toContain('25 min');
   expect(incidents).not.toContain('ongoing');
   expect(page.text).toContain('RECOVERED');

@@ -15,6 +15,14 @@
   var output = document.getElementById('validate-result');
   if (!button || !output || !window.payMonitorApi) return;
 
+  // The API returns an ISO UTC instant; show it in the display zone (IST by default).
+  function localTime(iso) {
+    return new Date(iso).toLocaleString('en-IN', {
+      timeZone: button.getAttribute('data-time-zone') || 'UTC',
+      timeZoneName: 'short',
+    });
+  }
+
   button.addEventListener('click', function () {
     var collection = document.getElementById('sourceCollection');
     var key = document.getElementById('timestampKey');
@@ -34,7 +42,7 @@
         if (data.valid) {
           output.textContent =
             'Valid' +
-            (data.latestTimestamp ? ' (newest document: ' + data.latestTimestamp + ' UTC)' : '') +
+            (data.latestTimestamp ? ' (newest document: ' + localTime(data.latestTimestamp) + ')' : '') +
             (data.warning ? '. ' + data.warning : '.');
         } else {
           output.textContent = data.reason;

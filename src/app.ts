@@ -46,6 +46,7 @@ import { createUsersRouter } from './modules/users/users.routes.js';
 import type { UsersService } from './modules/users/users.service.js';
 import { consumeFlash } from './utils/flash.js';
 import { maskUrl } from './utils/maskUrl.js';
+import { zoneLabel } from './utils/time.js';
 import './types/express.js';
 
 export interface AppDeps {
@@ -84,6 +85,9 @@ export function createApp(deps: AppDeps): Express {
   // an error page; views print it with <%= %>, so it is escaped.
   app.use((req, res, next) => {
     res.locals.appName = config.appName;
+    // Display zone label (IST) for views; values themselves are formatted by formatUtc.
+    res.locals.timeZone = config.display.timeZone;
+    res.locals.timeZoneLabel = zoneLabel(config.display.timeZone);
     // Lets the nav mark the current section (the path only, never the query string).
     res.locals.currentPath = req.path;
     next();

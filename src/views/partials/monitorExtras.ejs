@@ -10,7 +10,7 @@
   </div>
   <%# The chart settings travel in an attribute: attributes are decoded by the browser, script text is not. %>
   <div id="chart-root" data-config="<%= JSON.stringify(extras.chart) %>">
-    <canvas id="chart" role="img" aria-label="Chart of recent checks (times in UTC)"></canvas>
+    <canvas id="chart" role="img" aria-label="Chart of recent checks (times in <%= timeZoneLabel %>)"></canvas>
   </div>
   <output id="chart-status" class="muted" aria-live="polite"></output>
 </section>
@@ -26,8 +26,8 @@
         <% }) %>
       </select>
     </label>
-    <label>From (UTC) <input type="date" name="from" value="<%= extras.history.filters.from %>" /></label>
-    <label>To (UTC) <input type="date" name="to" value="<%= extras.history.filters.to %>" /></label>
+    <label>From (<%= timeZoneLabel %>) <input type="date" name="from" value="<%= extras.history.filters.from %>" /></label>
+    <label>To (<%= timeZoneLabel %>) <input type="date" name="to" value="<%= extras.history.filters.to %>" /></label>
     <button type="submit">Filter</button>
     <a href="?">Clear</a>
   </form>

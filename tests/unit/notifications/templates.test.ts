@@ -325,3 +325,13 @@ describe('escaping and times', () => {
     }
   });
 });
+
+describe('IST display zone', () => {
+  it('shows times in IST with no UTC label', () => {
+    const { text, html } = buildAlertEmail(stale, { ...ctx, timeZone: 'Asia/Kolkata' });
+    for (const body of [text, html]) {
+      expect(body).toContain('2026-11-18 19:35:09 IST');
+      expect(body).not.toContain('UTC');
+    }
+  });
+});

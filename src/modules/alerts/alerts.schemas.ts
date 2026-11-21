@@ -6,7 +6,7 @@ import { objectIdSchema } from '../../utils/objectId.js';
 
 const isoDay = z.iso.date();
 
-/** FR-D5 filters. Dates are plain days (UTC); every key is whitelisted. */
+/** FR-D5 filters. Dates are plain days in the display zone (dayBounds); every key is whitelisted. */
 export const alertListQuery = z
   .object({
     monitorId: z.union([z.literal(''), objectIdSchema]).optional(),

@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { ALERT_STATUS } from '../../constants/alertStatus.js';
 import { ALERT_TYPE } from '../../constants/alertType.js';
+import { dayBounds } from '../../utils/time.js';
 import { renderPage } from '../../utils/renderPage.js';
 import { alertListValidation } from './alerts.schemas.js';
 import type { AlertsService } from './alerts.service.js';
@@ -26,8 +27,8 @@ export function createAlertsPageController(deps: {
         ...(query.monitorId ? { monitorId: query.monitorId } : {}),
         ...(query.type ? { type: query.type } : {}),
         ...(query.status ? { status: query.status } : {}),
-        ...(query.from ? { from: new Date(`${query.from}T00:00:00.000Z`) } : {}),
-        ...(query.to ? { to: new Date(`${query.to}T23:59:59.999Z`) } : {}),
+        ...(query.from ? { from: dayBounds(query.from, deps.timeZone).start } : {}),
+        ...(query.to ? { to: dayBounds(query.to, deps.timeZone).end } : {}),
       };
       const page = await deps.alerts.list(filter, {
         ...(query.cursor ? { cursor: query.cursor } : {}),

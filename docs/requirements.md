@@ -213,7 +213,7 @@ It has two parts:
 - Recipients CRUD (FR-R); delete moves a record to **Deleted records**, a full-screen popup opened by one button per list page, next to the New button
 - Dashboard users CRUD (§3)
 
-**FR-D7. Times:** All times are shown in **UTC**, labelled "UTC". This applies to both the dashboard and emails.
+**FR-D7. Times:** All times are shown in the display zone `TIMEZONE` (default `Asia/Kolkata`), labelled "IST". This applies to both the dashboard and emails. Stored data, logs and JSON API values stay UTC. Date filters (`From`/`To`) are days in the display zone.
 
 ### 4.6 Scheduler
 
@@ -286,7 +286,7 @@ All tuning values live in **one typed config module** (`src/config/`). Each valu
 | `MIN_CHECK_INTERVAL_MIN` | `1` | Smallest allowed check interval |
 | `MAX_CHECK_INTERVAL_MIN` | `1440` | Largest allowed check interval (at most 1440 = 24 h; TD-30) |
 | `APP_NAME` | `payMonitor` | Product name people see: browser title and brand, email subject prefix (FR-A6) and footer, warnings and the startup log message. 1–40 characters, no control characters. Technical identifiers (MongoDB app name, log `service` field, default DB name) do not change (TD-35) |
-| `TIMEZONE` | `UTC` | Time zone for display and emails (FR-D7) |
+| `TIMEZONE` | `Asia/Kolkata` | Time zone for display and emails (FR-D7) |
 | `LOGIN_RATE_LIMIT` | `5 per 15 min` | Login attempts per IP |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | — | First admin (§3) |
 | `MASTER_ALERT_EMAIL` / `MASTER_ALERT_NAME` | — | First master recipient (FR-R3) |

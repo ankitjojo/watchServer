@@ -38,7 +38,7 @@ export function toUserFormValues(user: User): UserFormValues {
 
 export const USER_ROLE_OPTIONS = [ROLE.ADMIN, ROLE.VIEWER] as const;
 
-export const USER_DELETED_COLUMNS = ['Name', 'Email', 'Role', 'Status', 'Last login', 'Deleted on (UTC)'];
+export const USER_DELETED_COLUMNS = ['Name', 'Email', 'Role', 'Status', 'Last login', 'Deleted on'];
 
 export function toUserDeletedRow(user: User, timeZone: string): DeletedRowView {
   return {

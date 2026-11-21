@@ -171,3 +171,9 @@
 - **Decision** (user): the Deleted records list is a full-screen modal showing the page's table columns, not a dropdown. It was overlapping the page content.
 - **Why `<dialog>` + JS, not CSS-only (`:target`)**: the project already serves static scripts from `/public/js` under `script-src 'self'` (`confirm.js`), so one more file is consistent. `<dialog>.showModal()` gives Esc, focus-in, Tab containment, focus return and `aria-modal` for free; `:target` would change the URL, break Back and could not return focus or contain Tab.
 - **Cost**: ~20 lines of JS; without JS the button does nothing (the modal is hidden). The data is also reachable from each monitor's own detail page.
+
+### TD-38 · Display times in IST, store UTC — Accepted (2026-11-21)
+- **Decision** (user): dashboard and emails show IST. `TIMEZONE` default becomes `Asia/Kolkata` (env can still override); label is the short zone name (`IST`) from `zoneLabel`. Storage, logs, cursors and JSON API values stay UTC ISO.
+- **Day filters** (`From`/`To` on alerts and monitor history, chart custom range) mean days in the display zone: `dayBounds()` converts to UTC instants. The chart sends the zone offset (`zoneOffset`) with the plain days.
+- **Why not hard-code IST**: the zone was already a config value used by every view and email; changing the default is the smallest change.
+- **Known limit**: the chart's custom-range offset is computed at request time, not per day; fine for IST (no DST), off by an hour across a DST change for other zones.

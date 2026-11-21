@@ -38,7 +38,7 @@
   <label for="timestampKey">Timestamp key</label>
   <div class="field-row">
     <input id="timestampKey" name="timestampKey" type="text" maxlength="64" required value="<%= v.timestampKey || '' %>" />
-    <button type="button" id="validate-key" data-endpoint="/api/v1/source/validate-timestamp-key">Validate key</button>
+    <button type="button" id="validate-key" data-endpoint="/api/v1/source/validate-timestamp-key" data-time-zone="<%= timeZone %>">Validate key</button>
   </div>
   <output id="validate-result" class="muted" aria-live="polite"></output>
   <%- include('../../partials/fieldError', { field: 'timestampKey' }) %>

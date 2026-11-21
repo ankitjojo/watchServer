@@ -34,8 +34,8 @@ Role column: `A` = admin only, `V` = admin or viewer.
 HTML forms only support GET/POST, so page mutations use `POST /<resource>/:id/<action>`.
 
 Query parameters on pages (all whitelisted with `.strict()`, malformed values answer 400):
-- `GET /webhook-monitors/:id` and `/endpoint-monitors/:id`: `result` (`OK|STALE|NO_DATA|DOWN|ERROR`), `from`, `to` (plain `YYYY-MM-DD`, UTC), `cursor`. They filter the history table; "Older" links carry the cursor.
-- `GET /alerts` (FR-D5): `monitorId`, `type`, `status`, `from`, `to` (plain days, UTC), `cursor`. Page size 50.
+- `GET /webhook-monitors/:id` and `/endpoint-monitors/:id`: `result` (`OK|STALE|NO_DATA|DOWN|ERROR`), `from`, `to` (plain `YYYY-MM-DD`, in the display zone), `cursor`. They filter the history table; "Older" links carry the cursor.
+- `GET /alerts` (FR-D5): `monitorId`, `type`, `status`, `from`, `to` (plain days in the display zone, IST by default), `cursor`. Page size 50.
 - Users and recipients: no query parameters. Resending is the JSON call `POST /api/v1/alerts/:id/resend` (202 "queued"), made by `alertActions.js`.
 
 Chart data is read by `charts.js` from `GET /api/v1/monitors/:type/:id/series` (`range=24h|7d|30d|custom`, custom needs `from`/`to` ISO datetimes, at most 90 days, at most 500 points). The chart settings reach the browser in a `data-config` attribute, not an inline script (CSP; entities inside `<script>` text are not decoded).

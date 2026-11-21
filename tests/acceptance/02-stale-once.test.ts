@@ -37,7 +37,7 @@ it('stores exactly one WEBHOOK_STALE alert, then sends exactly one email', async
     'dCreatedAt',
     'Age:',
     'Threshold: 1 min',
-    'UTC',
+    'IST',
     `/webhook-monitors/${monitorId}`,
   ]) {
     expect(email?.text).toContain(field);

@@ -36,7 +36,7 @@ describe('loadConfig', () => {
       minCheckIntervalMs: 60_000,
       maxCheckIntervalMs: 86_400_000,
     });
-    expect(c.display.timeZone).toBe('UTC');
+    expect(c.display.timeZone).toBe('Asia/Kolkata');
     expect(c.rateLimit.login).toEqual({ max: 5, windowMs: 900_000 });
     expect(c.alerts.sourceErrorGroupWindowMs).toBe(60000);
     expect(c.scheduler).toEqual({ leaseTtlMs: 45000, leaseRenewMs: 15000, concurrency: 5 });

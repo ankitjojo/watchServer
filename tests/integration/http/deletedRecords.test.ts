@@ -118,7 +118,7 @@ describe.each(screens)('$label: Deleted records button and delete flash', (s) =>
     await fresh.stop();
   });
 
-  it('T1/T7/T10: delete shows the new flash, lists the record (escaped, UTC), and it leaves the live list', async () => {
+  it('T1/T7/T10: delete shows the new flash, lists the record (escaped, IST), and it leaves the live list', async () => {
     const admin = await t.loginAs(ADMIN);
     const name = `<b>evil</b> ${uniq('x')}`;
     const id = await s.make(name);
@@ -132,8 +132,8 @@ describe.each(screens)('$label: Deleted records button and delete flash', (s) =>
     expect(modal).toContain('&lt;b&gt;evil&lt;/b&gt;');
     expect(modal).toContain('<table');
     expect(count(modal, '<tr>')).toBe(2); // header + the one deleted row
-    expect(modal).toContain('Deleted on (UTC)');
-    expect(modal).toMatch(/\d{4}-\d{2}-\d{2}.*UTC/s);
+    expect(modal).toContain('Deleted on');
+    expect(modal).toMatch(/\d{4}-\d{2}-\d{2}.*IST/s);
     expect(modal).not.toContain('<button type="submit"');
     expect(modal).not.toContain('<form');
     expect(modal).not.toMatch(/>(Edit|Delete)</);

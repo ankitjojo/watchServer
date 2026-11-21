@@ -4,16 +4,13 @@ import type { MonitorType } from '../../constants/monitorType.js';
 import { defineValidation } from '../../middlewares/validate.js';
 import type { Clock } from '../../types/clock.js';
 import { formatHumanDuration } from '../../utils/duration.js';
-import { formatUtc } from '../../utils/time.js';
+import { dayBounds, formatUtc, zoneOffset } from '../../utils/time.js';
 import type { AlertsService } from '../alerts/alerts.service.js';
 import { toAlertRowView, type AlertRowView } from '../alerts/alerts.view.js';
 import type { ChecksService } from '../checks/checks.service.js';
 import type { Check } from '../checks/checks.types.js';
 import type { IncidentsService } from '../incidents/incidents.service.js';
 import type { Incident } from '../incidents/incidents.types.js';
-
-const dayStart = z.iso.date().transform((d) => new Date(`${d}T00:00:00.000Z`));
-const dayEnd = z.iso.date().transform((d) => new Date(`${d}T23:59:59.999Z`));
 
 /** `?result=&from=&to=&cursor=` of a monitor detail page (history filters, FR-D4). Dates are plain days. */
 export const detailQuery = z
@@ -55,7 +52,13 @@ export interface MonitorDetailExtras {
   incidents: IncidentRowView[];
   alerts: AlertRowView[];
   /** Read by charts.js through a data attribute (CSP forbids inline scripts). */
-  chart: { seriesUrl: string; type: 'webhook' | 'endpoint'; thresholdMs?: number };
+  chart: {
+    seriesUrl: string;
+    type: 'webhook' | 'endpoint';
+    thresholdMs?: number;
+    timeZone: string;
+    zoneOffset: string;
+  };
 }
 
 const PAGE_SIZE = 25;
@@ -124,8 +127,8 @@ export function createMonitorDetailBuilder(deps: {
   return {
     async build({ type, monitorId, query, thresholdMs, canResend }) {
       const result = query.result === '' ? undefined : query.result;
-      const from = query.from ? dayStart.parse(query.from) : undefined;
-      const to = query.to ? dayEnd.parse(query.to) : undefined;
+      const from = query.from ? dayBounds(query.from, timeZone).start : undefined;
+      const to = query.to ? dayBounds(query.to, timeZone).end : undefined;
       const [page, incidentList, alertList] = await Promise.all([
         checks.listForMonitor(
           { monitorId, ...(result ? { result } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}) },
@@ -156,6 +159,8 @@ export function createMonitorDetailBuilder(deps: {
         chart: {
           seriesUrl: `/api/v1/monitors/${kind}/${monitorId}/series`,
           type: kind,
+          timeZone,
+          zoneOffset: zoneOffset(timeZone, clock.now()),
           ...(thresholdMs === undefined ? {} : { thresholdMs }),
         },
       };

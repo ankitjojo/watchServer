@@ -27,7 +27,7 @@ export interface EndpointMonitorDetailView extends EndpointMonitorRowView {
   isEnabled: boolean;
   created: string;
   updated: string;
-  /** UTC time of deletion; null for a live monitor. */
+  /** Time of deletion (display zone); null for a live monitor. */
   deletedOn: string | null;
 }
 
@@ -71,7 +71,7 @@ export const ENDPOINT_DELETED_COLUMNS = [
   'Retries',
   'Last check',
   'Last response',
-  'Deleted on (UTC)',
+  'Deleted on',
 ];
 
 export function toEndpointDeletedRow(monitor: EndpointMonitor, timeZone: string): DeletedRowView {

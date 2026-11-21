@@ -113,7 +113,7 @@ describe('overview', () => {
     expect(res.text).toContain('Subscription API');
     expect(res.text).toMatch(/badge-stale/);
     expect(res.text).toMatch(/badge-down/);
-    expect(res.text).toContain('UTC');
+    expect(res.text).toContain('IST');
   });
 
   it('escapes monitor names', async () => {

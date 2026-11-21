@@ -121,7 +121,7 @@ Same as 5.1 but step 2 is `httpProbe(url, { timeoutMs, retryCount, retryDelayMs,
 
 ## 6. Cross-cutting
 
-- **Time**: all logic in UTC; `Clock` (`now(): Date`) injected into runners/policies for testability. Display timezone from config (`TIMEZONE`, default `UTC`).
+- **Time**: all logic in UTC; `Clock` (`now(): Date`) injected into runners/policies for testability. Display timezone from config (`TIMEZONE`, default `Asia/Kolkata`, labelled IST); storage and logic stay UTC.
 - **Durations**: stored as `{ nValue, eUnit }` (what the admin typed) **and** `nMs` (derived on save) so queries/logic never re-derive with a changed `DAYS_PER_MONTH`. [Recommendation — see technical-decisions TD-08]
 - **Errors**: `AppError` hierarchy → central handler; see [coding-standards.md](coding-standards.md#errors).
 - **Logging**: Pino with redaction; see [.claude/rules/error-handling-logging.md](../.claude/rules/error-handling-logging.md).

@@ -13,9 +13,27 @@
   var muted = style.getPropertyValue('--muted').trim() || '#5d6b7e';
   var chart;
 
+  var zoneLabel = new Intl.DateTimeFormat('en-IN', { timeZone: config.timeZone, timeZoneName: 'short' })
+    .formatToParts(new Date())
+    .filter(function (p) {
+      return p.type === 'timeZoneName';
+    })[0].value;
+  var labelFormat = new Intl.DateTimeFormat('en-CA', {
+    timeZone: config.timeZone,
+    hourCycle: 'h23',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
   function label(iso) {
-    // "11-18 14:05": always UTC, as the axis title says.
-    return iso.slice(5, 10) + ' ' + iso.slice(11, 16);
+    // "11-18 19:35" in the display zone, as the axis title says.
+    var p = {};
+    labelFormat.formatToParts(new Date(iso)).forEach(function (x) {
+      p[x.type] = x.value;
+    });
+    return p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute;
   }
 
   function draw(points, thresholdMs) {
@@ -59,7 +77,7 @@
         responsive: true,
         animation: false,
         scales: {
-          x: { title: { display: true, text: 'Time (UTC)', color: muted } },
+          x: { title: { display: true, text: 'Time (' + zoneLabel + ')', color: muted } },
           y: {
             beginAtZero: true,
             title: { display: true, text: isWebhook ? 'Minutes' : 'Milliseconds', color: muted },
@@ -73,7 +91,10 @@
     var url = config.seriesUrl + '?range=' + encodeURIComponent(range);
     if (range === 'custom') {
       url +=
-        '&from=' + encodeURIComponent(from + 'T00:00:00Z') + '&to=' + encodeURIComponent(to + 'T23:59:59Z');
+        '&from=' +
+        encodeURIComponent(from + 'T00:00:00' + config.zoneOffset) +
+        '&to=' +
+        encodeURIComponent(to + 'T23:59:59' + config.zoneOffset);
     }
     status.textContent = 'Loading…';
     window
@@ -81,7 +102,9 @@
       .then(function (payload) {
         var points = payload.data.points;
         status.textContent =
-          points.length === 0 ? 'No checks in this range.' : points.length + ' point(s), times in UTC.';
+          points.length === 0
+            ? 'No checks in this range.'
+            : points.length + ' point(s), times in ' + zoneLabel + '.';
         draw(points, payload.data.thresholdMs);
       })
       .catch(function (error) {

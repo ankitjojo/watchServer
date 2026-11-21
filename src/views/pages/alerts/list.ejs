@@ -20,8 +20,8 @@
       <% options.statuses.forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= s %></option><% }) %>
     </select>
   </label>
-  <label>From (UTC) <input type="date" name="from" value="<%= filters.from %>" /></label>
-  <label>To (UTC) <input type="date" name="to" value="<%= filters.to %>" /></label>
+  <label>From (<%= timeZoneLabel %>) <input type="date" name="from" value="<%= filters.from %>" /></label>
+  <label>To (<%= timeZoneLabel %>) <input type="date" name="to" value="<%= filters.to %>" /></label>
   <button type="submit">Filter</button>
   <a href="/alerts">Clear</a>
 </form>

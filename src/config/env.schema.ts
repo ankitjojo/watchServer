@@ -92,7 +92,7 @@ export const envSchema = z
     MIN_CHECK_INTERVAL_MIN: intRange(1, 1440).default(1),
     // Review H1: 24 h at most, which also keeps every timer far below Node's 2^31-1 ms limit.
     MAX_CHECK_INTERVAL_MIN: intRange(1, 1440).default(1440),
-    TIMEZONE: timeZone.default('UTC'),
+    TIMEZONE: timeZone.default('Asia/Kolkata'),
 
     LOGIN_RATE_LIMIT: rateLimit.default('5 per 15 min'),
     ACTION_RATE_LIMIT: rateLimit.default('10 per 1 min'),
