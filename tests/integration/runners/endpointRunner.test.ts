@@ -161,6 +161,7 @@ describe('deleted while a check is running (review L4, T3)', () => {
       logger: createLogger({ level: 'silent' }),
       probeDeps: { ...systemProbeDeps, sleep: () => Promise.resolve() },
       probeOptions: { retryDelayMs: 0, timeoutMs: 2000, maxRedirects: 2 },
+      downAfterChecks: 1,
     });
     const check = await runner.run(monitor.id, 'SCHEDULE');
     expect(check?.result).toBe('DOWN');
@@ -170,5 +171,63 @@ describe('deleted while a check is running (review L4, T3)', () => {
     expect(alerts.outcomes).toHaveLength(0);
     const kept = await t.services.endpointMonitors.getByIdIncludingDeleted(monitor.id);
     expect(kept.state.lastResult ?? null).toBeNull();
+  });
+});
+
+describe('ENDPOINT_DOWN_AFTER_CHECKS (TD-39)', () => {
+  const runnerWith = (downAfterChecks: number) =>
+    createEndpointRunner({
+      monitors: t.services.endpointMonitors,
+      checks: t.services.checks,
+      alerts,
+      clock: systemClock,
+      logger: createLogger({ level: 'silent' }),
+      probeDeps: { ...systemProbeDeps, sleep: () => Promise.resolve() },
+      probeOptions: { retryDelayMs: 0, timeoutMs: 2000, maxRedirects: 2 },
+      downAfterChecks,
+    });
+  const downOutcomes = () => alerts.outcomes.filter((o) => o.check.result === 'DOWN');
+
+  it('with 2: one failed check stores DOWN but sends nothing; the second failed check in a row alerts', async () => {
+    const monitor = await create('Confirm two', '/fail', 0);
+    const runner = runnerWith(2);
+    expect((await runner.run(monitor.id, 'SCHEDULE'))?.result).toBe('DOWN');
+    expect(downOutcomes()).toHaveLength(0);
+    const state = (await t.services.endpointMonitors.getById(monitor.id)).state;
+    expect(state).toMatchObject({ lastResult: 'DOWN', currentStatus: 'DOWN', consecutiveFailures: 1 });
+    await runner.run(monitor.id, 'SCHEDULE');
+    expect(downOutcomes()).toHaveLength(1);
+    expect((await t.services.endpointMonitors.getById(monitor.id)).state.consecutiveFailures).toBe(2);
+  });
+
+  it('an OK check in between resets the count (a blip never alerts)', async () => {
+    const monitor = await create('Blip', '/fail', 0);
+    const runner = runnerWith(2);
+    await runner.run(monitor.id, 'SCHEDULE');
+    await t.services.endpointMonitors.update(
+      monitor.id,
+      {
+        serverName: 'Blip',
+        url: `${base}/ok`,
+        checkInterval: { value: 5, unit: 'MINUTE' },
+        retryCount: 0,
+        alertMode: 'ONCE_WITH_RECOVERY',
+        isEnabled: true,
+      },
+      actor,
+    );
+    await runner.run(monitor.id, 'SCHEDULE');
+    expect((await t.services.endpointMonitors.getById(monitor.id)).state.consecutiveFailures).toBe(0);
+    expect(downOutcomes()).toHaveLength(0);
+  });
+
+  it('loads an old monitor document without the counter as 0', async () => {
+    const monitor = await create('Old doc', '/fail', 0);
+    await t.db
+      .collection(COLLECTIONS.ENDPOINT_MONITORS)
+      .updateOne({ _id: new ObjectId(monitor.id) }, { $unset: { 'oState.nConsecutiveFailures': '' } });
+    expect((await t.services.endpointMonitors.getById(monitor.id)).state.consecutiveFailures).toBe(0);
+    await runnerWith(2).run(monitor.id, 'SCHEDULE');
+    expect(downOutcomes()).toHaveLength(0);
   });
 });

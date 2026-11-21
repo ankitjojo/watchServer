@@ -97,7 +97,7 @@ Hard rules:
 7. Dispatcher picks up PENDING alerts (immediately via in-process nudge, and by polling as a fallback).
 
 ### 5.2 Endpoint check (FR-E2)
-Same as 5.1 but step 2 is `httpProbe(url, { timeoutMs, retryCount, retryDelayMs, maxRedirects })` returning all attempts. `DOWN` only if every attempt fails. No `ERROR` grouping — an unreachable URL **is** the alert.
+Same as 5.1 but step 2 is `httpProbe(url, { timeoutMs, retryCount, retryDelayMs, maxRedirects })` returning all attempts. `DOWN` only if every attempt fails; the timeout covers the DNS lookup too. No `ERROR` grouping — an unreachable URL **is** the alert, but only once `ENDPOINT_DOWN_AFTER_CHECKS` checks in a row failed (`endpointMonitors.downConfirm.ts`, TD-39); until then the DOWN check is stored and shown and the alert step is skipped.
 
 ### 5.3 Alert dispatch (FR-A1, FR-A2)
 1. Atomically claim one due alert: `findOneAndUpdate({eStatus ∈ {PENDING,RETRYING}, dNextAttemptAt ≤ now, dLockedUntil < now}, {$set:{dLockedUntil, sClaimId}})`. Outcome writes match `sClaimId`, so an expired claim cannot overwrite the dispatcher that took over (TD-32).

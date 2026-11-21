@@ -100,6 +100,28 @@ function classifyError(err: unknown): string {
   return 'NETWORK_ERROR';
 }
 
+/** Settles like `work`, or rejects with a TimeoutError (classified as TIMEOUT) once the signal aborts. */
+function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  const timedOut = (): Error => Object.assign(new Error('The request timed out'), { name: 'TimeoutError' });
+  if (signal.aborted) return Promise.reject(timedOut());
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = (): void => {
+      reject(timedOut());
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    work.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (err: unknown) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(err instanceof Error ? err : new Error('DNS lookup failed', { cause: err }));
+      },
+    );
+  });
+}
+
 /**
  * One attempt: GET with manual redirects, so ENDPOINT_MAX_REDIRECTS is honoured (TD-12).
  * One timeout covers the whole attempt including redirects. The body is never read.
@@ -137,7 +159,8 @@ export async function probeOnce(
       if (current.username !== '' || current.password !== '')
         return finish({ errorCode: 'INVALID_REDIRECT' });
 
-      const addresses = await deps.lookup(current.hostname.replace(/^\[|\]$/g, ''));
+      // The timeout covers DNS too: a hung resolver must not stretch an attempt to the OS limit (~30 s).
+      const addresses = await untilAborted(deps.lookup(current.hostname.replace(/^\[|\]$/g, '')), signal);
       if (addresses.some(isBlockedAddress)) return finish({ errorCode: 'BLOCKED_ADDRESS' });
 
       // The request releases the socket without reading the body: payloads are never surfaced (security 2.9).

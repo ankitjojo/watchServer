@@ -122,7 +122,7 @@ Invariant "≥ 1 MASTER exists" is enforced in the service (a master cannot be d
 | oRepeatInterval | duration (units `MINUTE`\|`HOUR`\|`DAY`), absent unless `REPEAT_EVERY` |
 | bIsEnabled | boolean |
 | bHasDescIndexAtSave | boolean (for the warning badge) |
-| oState | `{ eLastResult, eCurrentStatus, dLastCheckAt, dNextCheckAt, iLastCheckId, iOpenIncidentId, nLastAgeMs, nLastResponseTimeMs }`. `eLastResult` is the last result including `ERROR`; `eCurrentStatus` stays unchanged during a source outage (FR-A4a) and is `ERROR` for the monitor's own per-collection error (TD-29). `dLastAlertAt` / `nReminderCount` live on `incidents` (TD-21). Written only through dotted `$set` on `oState.*`. |
+| oState | `{ eLastResult, eCurrentStatus, dLastCheckAt, dNextCheckAt, iLastCheckId, iOpenIncidentId, nLastAgeMs, nLastResponseTimeMs, nConsecutiveFailures? }`. `nConsecutiveFailures` (endpoint monitors only, TD-39): failed checks in a row, reset to 0 on OK; absent on older documents and on webhook monitors = 0. `eLastResult` is the last result including `ERROR`; `eCurrentStatus` stays unchanged during a source outage (FR-A4a) and is `ERROR` for the monitor's own per-collection error (TD-29). `dLastAlertAt` / `nReminderCount` live on `incidents` (TD-21). Written only through dotted `$set` on `oState.*`. |
 | dDeletedAt | Date \| null (always stored, `null` while active). This is the soft-delete marker for monitors; they have **no** `bIsDeleted` (TD-36). |
 | iDeletedBy | ObjectId \| null (users), optional: who deleted it; absent on monitors deleted before TD-36 |
 | iCreatedBy / iUpdatedBy | ObjectId (users) |

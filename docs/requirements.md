@@ -116,6 +116,8 @@ It has two parts:
   - Maximum redirects followed: `ENDPOINT_MAX_REDIRECTS` (default 5)
 
 **FR-E2. Run the check.** A check passes only if the final status is exactly **200**. If an attempt fails (any other status, a timeout, a DNS error or a connection error), retry up to *retry count* times. The check is `DOWN` only if **all attempts fail**.
+- Each attempt, including its DNS lookup, ends after `ENDPOINT_TIMEOUT_MS`.
+- A `DOWN` check is always stored and shown, but the incident (and the `ENDPOINT_DOWN` email) opens only after `ENDPOINT_DOWN_AFTER_CHECKS` failed checks in a row (default 2), so a short network blip on payMonitor's own side does not alert (TD-39). Once the incident is open, the alert mode applies as usual (FR-A3).
 - Store the status code, response time and error message of every attempt.
 
 **FR-E3.** A DOWN email includes:
@@ -280,6 +282,7 @@ All tuning values live in **one typed config module** (`src/config/`). Each valu
 | `ENDPOINT_MAX_REDIRECTS` | `5` | Redirects followed (FR-E1) |
 | `ENDPOINT_MAX_RETRY_COUNT` | `5` | Highest retry count allowed in the form |
 | `ENDPOINT_DEFAULT_RETRY_COUNT` | `2` | Pre-filled retry count in the form |
+| `ENDPOINT_DOWN_AFTER_CHECKS` | `2` | Failed checks in a row before an endpoint incident opens and `ENDPOINT_DOWN` is sent (1–10; `1` = alert on the first failed check; TD-39) |
 | `EMAIL_RETRY_BACKOFF_MIN` | `1,5,15` | Email retry schedule; the number of values = number of retries (FR-A2) |
 | `SOURCE_QUERY_TIMEOUT_MS` | `10000` | `maxTimeMS` on source DB queries |
 | `DAYS_PER_MONTH` | `30` | Converts the `month` unit (FR-W1) |

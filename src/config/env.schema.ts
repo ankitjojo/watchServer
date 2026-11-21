@@ -82,6 +82,7 @@ export const envSchema = z
     ENDPOINT_MAX_REDIRECTS: intRange(0, 20).default(5),
     ENDPOINT_MAX_RETRY_COUNT: intRange(0, 10).default(5),
     ENDPOINT_DEFAULT_RETRY_COUNT: intRange(0, 10).default(2),
+    ENDPOINT_DOWN_AFTER_CHECKS: intRange(1, 10).default(2),
 
     EMAIL_RETRY_BACKOFF_MIN: backoff.default('1,5,15'),
     SOURCE_ERROR_GROUP_WINDOW_MS: intRange(0, 600000).default(60000),

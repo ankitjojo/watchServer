@@ -177,3 +177,10 @@
 - **Day filters** (`From`/`To` on alerts and monitor history, chart custom range) mean days in the display zone: `dayBounds()` converts to UTC instants. The chart sends the zone offset (`zoneOffset`) with the plain days.
 - **Why not hard-code IST**: the zone was already a config value used by every view and email; changing the default is the smallest change.
 - **Known limit**: the chart's custom-range offset is computed at request time, not per day; fine for IST (no DST), off by an hour across a DST change for other zones.
+
+### TD-39 · Endpoint DOWN alert only after N failed checks in a row — Accepted (2026-11-21)
+- **Context**: two false `ENDPOINT_DOWN` emails (2026-11-21) came from the monitor machine losing its network for about a minute; the next check was OK both times and SMTP was unreachable at the same moments. One failed check was enough to alert.
+- **Decision** (user): `ENDPOINT_DOWN_AFTER_CHECKS` (default 2, range 1–10). Every DOWN check is still stored and shown (FR-H1); the incident and email wait until N checks in a row failed. With an incident open, the alert mode works as before. Counter in `oState.nConsecutiveFailures` (missing = 0, no migration). Pure rule `shouldProcessAlert` in `endpointMonitors.downConfirm.ts`.
+- **Also fixed**: the probe's DNS pre-check ran outside the attempt timeout, so a hung resolver made one attempt last ~30 s instead of `ENDPOINT_TIMEOUT_MS`.
+- **Cost**: a real outage is reported one check interval later. `1` restores the old behaviour.
+- **Not done** (user): a "monitor offline" guard with check URLs; the webhook/Source DB side (FR-A4a) is unchanged. Tests pin `ENDPOINT_DOWN_AFTER_CHECKS=1` so alert-flow tests stay about their flow; the acceptance criterion text is unchanged.

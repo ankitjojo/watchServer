@@ -28,6 +28,7 @@ describe('loadConfig', () => {
       maxRedirects: 5,
       maxRetryCount: 5,
       defaultRetryCount: 2,
+      downAfterChecks: 2,
     });
     expect(c.email.retryBackoffMs).toEqual([60_000, 300_000, 900_000]);
     expect(c.sourceDb.queryTimeoutMs).toBe(10000);
@@ -121,6 +122,8 @@ describe('loadConfig', () => {
     ['DAYS_PER_MONTH', '45'],
     ['ENDPOINT_TIMEOUT_MS', 'soon-secret'],
     ['TIMEZONE', 'Mars/Base-secret'],
+    ['ENDPOINT_DOWN_AFTER_CHECKS', '0'],
+    ['ENDPOINT_DOWN_AFTER_CHECKS', '11'],
     ['LOGIN_RATE_LIMIT', 'lots-secret'],
   ])('rejects invalid %s and names the variable without echoing the value', (name, value) => {
     const issues = issuesFor({ ...base, [name]: value });

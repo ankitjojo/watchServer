@@ -25,6 +25,7 @@ export function toMonitorState(doc: Partial<MonitorStateDoc> | undefined): Monit
     openIncidentId: doc?.iOpenIncidentId?.toHexString() ?? null,
     lastAgeMs: doc?.nLastAgeMs ?? null,
     lastResponseTimeMs: doc?.nLastResponseTimeMs ?? null,
+    consecutiveFailures: doc?.nConsecutiveFailures ?? 0,
   };
 }
 
@@ -38,6 +39,7 @@ export interface MonitorStatePatch {
   openIncidentId?: string | null;
   lastAgeMs?: number | null;
   lastResponseTimeMs?: number | null;
+  consecutiveFailures?: number;
 }
 
 /**
@@ -56,5 +58,6 @@ export function toStateSet(patch: MonitorStatePatch): Record<string, unknown> {
   }
   if (patch.lastAgeMs !== undefined) set['oState.nLastAgeMs'] = patch.lastAgeMs;
   if (patch.lastResponseTimeMs !== undefined) set['oState.nLastResponseTimeMs'] = patch.lastResponseTimeMs;
+  if (patch.consecutiveFailures !== undefined) set['oState.nConsecutiveFailures'] = patch.consecutiveFailures;
   return set;
 }

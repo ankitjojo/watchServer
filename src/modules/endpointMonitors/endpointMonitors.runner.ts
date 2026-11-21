@@ -8,6 +8,7 @@ import { isStillRunnable, type CheckRunner } from '../checks/checkRunner.js';
 import type { ChecksService } from '../checks/checks.service.js';
 import type { EndpointMonitorsService } from './endpointMonitors.service.js';
 import type { EndpointMonitor } from './endpointMonitors.types.js';
+import { shouldProcessAlert } from './endpointMonitors.downConfirm.js';
 import { probe, type ProbeDeps } from './httpProbe.js';
 
 export interface EndpointRunnerDeps {
@@ -19,6 +20,8 @@ export interface EndpointRunnerDeps {
   probeDeps: ProbeDeps;
   /** From config (requirements 5.1), never from the form. */
   probeOptions: { retryDelayMs: number; timeoutMs: number; maxRedirects: number };
+  /** ENDPOINT_DOWN_AFTER_CHECKS (TD-39). */
+  downAfterChecks: number;
 }
 
 export function toEndpointSnapshot(monitor: EndpointMonitor): MonitorSnapshot {
@@ -35,7 +38,7 @@ export function toEndpointSnapshot(monitor: EndpointMonitor): MonitorSnapshot {
 }
 
 export function createEndpointRunner(deps: EndpointRunnerDeps): CheckRunner {
-  const { monitors, checks, alerts, clock, logger, probeDeps, probeOptions } = deps;
+  const { monitors, checks, alerts, clock, logger, probeDeps, probeOptions, downAfterChecks } = deps;
 
   return {
     async run(monitorId, trigger) {
@@ -69,13 +72,35 @@ export function createEndpointRunner(deps: EndpointRunnerDeps): CheckRunner {
         return check;
       }
 
+      const isDown = check.result === 'DOWN';
+      const consecutiveFailures = isDown ? monitor.state.consecutiveFailures + 1 : 0;
+      const processAlert = shouldProcessAlert({
+        isDown,
+        consecutiveFailures,
+        downAfterChecks,
+        hasOpenIncident: monitor.state.openIncidentId !== null,
+      });
+
       let openIncidentId: string | null | undefined;
       let alertError: Error | undefined;
-      try {
-        openIncidentId = (await alerts.processCheckOutcome({ monitor: toEndpointSnapshot(monitor), check }))
-          .openIncidentId;
-      } catch (err) {
-        alertError = err instanceof Error ? err : new Error('Alert processing failed', { cause: err });
+      if (processAlert) {
+        try {
+          openIncidentId = (await alerts.processCheckOutcome({ monitor: toEndpointSnapshot(monitor), check }))
+            .openIncidentId;
+        } catch (err) {
+          alertError = err instanceof Error ? err : new Error('Alert processing failed', { cause: err });
+        }
+      } else {
+        logger.warn(
+          {
+            event: 'check.downUnconfirmed',
+            monitorId: monitor.id,
+            checkId: check.id,
+            consecutiveFailures,
+            downAfterChecks,
+          },
+          'Endpoint check failed; waiting for more failed checks before alerting',
+        );
       }
 
       const lastAttempt = probed.attempts.at(-1);
@@ -85,6 +110,7 @@ export function createEndpointRunner(deps: EndpointRunnerDeps): CheckRunner {
         lastCheckAt: check.finishedAt,
         lastCheckId: check.id,
         lastResponseTimeMs: lastAttempt?.responseTimeMs ?? null,
+        consecutiveFailures,
         ...(openIncidentId === undefined ? {} : { openIncidentId }),
       });
 

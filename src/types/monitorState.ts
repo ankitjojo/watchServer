@@ -12,6 +12,8 @@ export interface MonitorStateDoc {
   iOpenIncidentId: ObjectId | null;
   nLastAgeMs: number | null;
   nLastResponseTimeMs: number | null;
+  /** Endpoint monitors: failed checks in a row (ENDPOINT_DOWN_AFTER_CHECKS). Absent on older documents = 0. */
+  nConsecutiveFailures?: number;
 }
 
 export interface MonitorState {
@@ -23,4 +25,5 @@ export interface MonitorState {
   openIncidentId: string | null;
   lastAgeMs: number | null;
   lastResponseTimeMs: number | null;
+  consecutiveFailures: number;
 }

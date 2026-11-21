@@ -40,6 +40,8 @@ export interface Config {
     maxRedirects: number;
     maxRetryCount: number;
     defaultRetryCount: number;
+    /** ENDPOINT_DOWN_AFTER_CHECKS: failed checks in a row before ENDPOINT_DOWN is raised. */
+    downAfterChecks: number;
   };
   email: { retryBackoffMs: number[] };
   alerts: {
@@ -151,6 +153,7 @@ export function loadConfig(source: NodeJS.ProcessEnv): Config {
       maxRedirects: e.ENDPOINT_MAX_REDIRECTS,
       maxRetryCount: e.ENDPOINT_MAX_RETRY_COUNT,
       defaultRetryCount: e.ENDPOINT_DEFAULT_RETRY_COUNT,
+      downAfterChecks: e.ENDPOINT_DOWN_AFTER_CHECKS,
     },
     email: { retryBackoffMs: e.EMAIL_RETRY_BACKOFF_MIN.split(',').map((m) => Number(m) * 60_000) },
     alerts: {

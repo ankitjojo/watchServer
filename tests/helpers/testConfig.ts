@@ -13,6 +13,8 @@ export function makeTestConfig(overrides: Record<string, string> = {}): Config {
     LOG_LEVEL: 'silent',
     // Generous by default so unrelated tests never trip it; the rate-limit test sets the real value.
     LOGIN_RATE_LIMIT: '1000 per 15 min',
+    // One failed check alerts, so tests about alert flows stay about them; TD-39 tests set 2.
+    ENDPOINT_DOWN_AFTER_CHECKS: '1',
     ...overrides,
   });
 }

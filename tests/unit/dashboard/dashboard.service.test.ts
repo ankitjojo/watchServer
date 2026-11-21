@@ -12,6 +12,7 @@ const emptyState: MonitorState = {
   openIncidentId: null,
   lastAgeMs: null,
   lastResponseTimeMs: null,
+  consecutiveFailures: 0,
 };
 const at = new Date('2026-11-18T10:00:00Z');
 const base = {

@@ -180,6 +180,7 @@ export function buildServices(deps: ServiceDeps): Services {
         timeoutMs: config.endpoint.timeoutMs,
         maxRedirects: config.endpoint.maxRedirects,
       },
+      downAfterChecks: config.endpoint.downAfterChecks,
     }),
   };
   const toScheduled = (

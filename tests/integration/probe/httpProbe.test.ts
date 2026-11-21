@@ -163,6 +163,13 @@ describe('failures', () => {
     expect(result.attempts[0]?.statusCode).toBeUndefined();
   });
 
+  it('times out a DNS lookup that never answers within timeoutMs (no ~30 s OS wait)', async () => {
+    const hungDns = createSystemProbeDeps({ resolve: () => new Promise(() => undefined) });
+    const result = await probeOnce('http://hangs.example/x', { ...opts, timeoutMs: 150 }, hungDns);
+    expect(result).toMatchObject({ errorCode: 'TIMEOUT', errorMessage: 'The request timed out' });
+    expect(result.responseTimeMs).toBeLessThan(1000);
+  });
+
   it('reports a refused connection', async () => {
     const result = await probe(`http://127.0.0.1:${await closedPort()}/x`, { ...opts, retryCount: 0 }, deps);
     expect(result.attempts[0]?.errorCode).toBe('CONNECTION_REFUSED');
